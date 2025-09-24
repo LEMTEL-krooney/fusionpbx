@@ -128,7 +128,7 @@
 								$sql .= "and template_category = 'password_reset' ";
 								$sql .= "and template_subcategory = 'default' ";
 								$sql .= "and template_type = 'html' ";
-								$sql .= "and template_enabled = 'true' ";
+								$sql .= "and template_enabled = true ";
 								$parameters['template_language'] = $user_language_code ? $user_language_code : $settings->get('domain', 'language', 'en-us');
 								$parameters['domain_uuid'] = $domain_uuid;
 								$row = $database->select($sql, $parameters, 'row');
@@ -152,24 +152,24 @@
 								}
 								else {
 									//email failed
-									message::add($eml_error, 'negative', 5000);
+									//message::add($eml_error, 'negative', 5000);
 								}
 						}
 						else {
 							//not found
-							message::add($text['message-invalid_email'], 'negative', 5000);
+							message::add($text['message-reset_link_sent'], 'negative', 5000);
 						}
 
 					}
 					else {
 						//matched multiple users
-						message::add($text['message-email_assigned_mutliple_users'], 'negative', 5000);
+						message::add($text['message-reset_link_sent'], 'negative', 5000);
 					}
 
 				}
 				else {
 					//not found
-					message::add($text['message-invalid_email'], 'negative', 5000);
+					message::add($text['message-reset_link_sent'], 'negative', 5000);
 				}
 
 		}

@@ -27,7 +27,6 @@
 /**
  * menu class
  */
-if (!class_exists('menu')) {
 	class menu {
 
 		/**
@@ -316,9 +315,9 @@ if (!class_exists('menu')) {
 		}
 
 		/**
-		 * delete items in the menu that are not protected
+		 * delete items in the menu used by restore default
 		 */
-		public function delete_unprotected() {
+		public function restore_delete() {
 			//remove existing menu languages
 				$sql  = "delete from v_menu_languages ";
 				$sql .= "where menu_uuid = :menu_uuid ";
@@ -326,47 +325,224 @@ if (!class_exists('menu')) {
 				$sql .= "	select menu_item_uuid ";
 				$sql .= "	from v_menu_items ";
 				$sql .= "	where menu_uuid = :menu_uuid ";
-				$sql .= "	and ( ";
-				$sql .= " 		menu_item_protected <> 'true' ";
-				$sql .= "		or menu_item_protected is null ";
-				$sql .= "	) ";
+				//$sql .= "	and ( ";
+				//$sql .= " 		menu_item_protected <> 'true' ";
+				//$sql .= "		or menu_item_protected is null ";
+				//$sql .= "	) ";
 				$sql .= ") ";
 				$parameters['menu_uuid'] = $this->menu_uuid;
 				$this->database->execute($sql, $parameters);
 				unset($sql, $parameters);
 
-			//remove existing unprotected menu item groups
+			//remove existing menu item groups
 				$sql = "delete from v_menu_item_groups ";
 				$sql .= "where menu_uuid = :menu_uuid ";
 				$sql .= "and menu_item_uuid in ( ";
 				$sql .= "	select menu_item_uuid ";
 				$sql .= "	from v_menu_items ";
 				$sql .= "	where menu_uuid = :menu_uuid ";
-				$sql .= "	and ( ";
-				$sql .= " 		menu_item_protected <> 'true' ";
-				$sql .= "		or menu_item_protected is null ";
-				$sql .= "	) ";
+				//$sql .= "	and ( ";
+				//$sql .= " 		menu_item_protected <> 'true' ";
+				//$sql .= "		or menu_item_protected is null ";
+				//$sql .= "	) ";
 				$sql .= ") ";
 				$parameters['menu_uuid'] = $this->menu_uuid;
 				$this->database->execute($sql, $parameters);
 				unset($sql, $parameters);
 
-			//remove existing unprotected menu items
+			//remove existing menu items
 				$sql  = "delete from v_menu_items ";
 				$sql .= "where menu_uuid = :menu_uuid ";
-				$sql .= "and ( ";
-				$sql .= "	menu_item_protected <> 'true' ";
-				$sql .= "	or menu_item_protected is null ";
-				$sql .= ") ";
+				//$sql .= "and ( ";
+				//$sql .= "	menu_item_protected <> 'true' ";
+				//$sql .= "	or menu_item_protected is null ";
+				//$sql .= ") ";
 				$parameters['menu_uuid'] = $this->menu_uuid;
 				$this->database->execute($sql, $parameters);
 				unset($sql, $parameters);
 		}
 
+		public function assign_items($records, $menu_uuid, $group_uuid) {
+			//assign the variables
+				$this->name = 'menu_item';
+				$this->table = 'menu_items';
+
+			if (permission_exists($this->name.'_add')) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate('/core/menu/menu_item_list.php')) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: '.$this->location);
+						exit;
+					}
+
+					//assign multiple records
+					if (is_array($records) && @sizeof($records) != 0 && !empty($group_uuid)) {
+
+						//define the group_name, group_uuid, menu_uuid
+							if (!empty($records) && @sizeof($records) != 0) {
+								$sql = "select group_name, group_uuid from v_groups	";
+								$sql .= "where group_uuid = :group_uuid	";
+								$parameters['group_uuid'] = $group_uuid;
+								$database = new database;
+								$group = $database->select($sql, $parameters, 'row');
+							}
+
+						//build the delete array
+							$x = 0;
+							foreach ($records as $record) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
+									//build array
+										$uuids[] = "'".$record['uuid']."'";
+									//assign menu item groups
+											$array['menu_item_groups'][$x]['menu_item_group_uuid'] = uuid();
+											$array['menu_item_groups'][$x]['menu_uuid'] = $menu_uuid;
+											$array['menu_item_groups'][$x][$this->name.'_uuid'] = $record['uuid'];
+											$array['menu_item_groups'][$x]['group_name'] = $group['group_name'];
+											$array['menu_item_groups'][$x]['group_uuid'] = $group['group_uuid'];
+									//increment
+											$x++;
+								}
+							}
+
+							unset($records);
+
+						//exlude exist rows
+						if (!empty($array) && @sizeof($array) != 0) {
+							$sql = "select menu_uuid, menu_item_uuid, ";
+							$sql .= "group_uuid from v_menu_item_groups ";
+							$database = new database;
+							$menu_item_groups = $database->select($sql, null, 'all');
+							$array['menu_item_groups'] = array_filter($array['menu_item_groups'], function($ar) use ($menu_item_groups) {
+								foreach ($menu_item_groups as $existingArrayItem) {
+									if ($ar['menu_uuid'] == $existingArrayItem['menu_uuid'] && $ar['menu_item_uuid'] == $existingArrayItem['menu_item_uuid'] && $ar['group_uuid'] == $existingArrayItem['group_uuid']) {
+										return false;
+									}
+								}
+								return true;
+							});
+							unset($menu_item_groups);
+						}
+
+						//add the checked rows fro group
+							if (!empty($array) && is_array($array) && @sizeof($array) != 0) {
+								//execute save
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->save($array);
+									unset($array);
+								//set message
+									message::add($text['message-add']);
+							}
+					}
+			}
+		}
+
+		public function unassign_items($records, $menu_uuid, $group_uuid) {
+			//assign the variables
+				$this->name = 'menu_item';
+				$this->table = 'menu_items';
+
+			if (permission_exists($this->name.'_add')) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate('/core/menu/menu_item_list.php')) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: '.$this->location);
+						exit;
+					}
+
+					//assign multiple records
+					if (is_array($records) && @sizeof($records) != 0 && !empty($group_uuid)) {
+
+						//define the group_name, group_uuid, menu_uuid
+							if (!empty($records) && @sizeof($records) != 0) {
+								$sql = "select group_name, group_uuid from v_groups	";
+								$sql .= "where group_uuid = :group_uuid	";
+								$parameters['group_uuid'] = $group_uuid;
+								$database = new database;
+								$group = $database->select($sql, $parameters, 'row');
+							}
+
+						//build the delete array
+							$x = 0;
+							foreach ($records as $record) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
+									//build array
+										$uuids[] = "'".$record['uuid']."'";
+									//assign menu item groups
+											$array['menu_item_groups'][$x]['menu_uuid'] = $menu_uuid;
+											$array['menu_item_groups'][$x][$this->name.'_uuid'] = $record['uuid'];
+											$array['menu_item_groups'][$x]['group_name'] = $group['group_name'];
+											$array['menu_item_groups'][$x]['group_uuid'] = $group['group_uuid'];
+									//increment
+											$x++;
+								}
+							}
+
+							unset($records);
+
+						//include child menu items and their main_uuid too
+							if (!empty($uuids) && @sizeof($uuids) != 0) {
+								$sql = "select menu_uuid, menu_item_uuid as uuid from v_".$this->table." ";
+								$sql .= "where menu_item_parent_uuid in (".implode(', ', $uuids).") ";
+								$database = new database;
+								$rows = $database->select($sql, null, 'all');
+								if (!empty($rows) && @sizeof($rows) != 0) {
+									foreach ($rows as $row) {
+										//assign menu item groups
+											$array['menu_item_groups'][$x]['menu_uuid'] = $row['menu_uuid'];
+											$array['menu_item_groups'][$x][$this->name.'_uuid'] = $row['uuid'];
+											$array['menu_item_groups'][$x]['group_name'] = $group['group_name'];
+											$array['menu_item_groups'][$x]['group_uuid'] = $group['group_uuid'];
+										//increment
+											$x++;
+									}
+								}
+							}
+
+							unset($uuids);
+
+						//add the checked rows fro group
+							if (!empty($array) && is_array($array) && @sizeof($array) != 0) {
+							//grant temporary permissions
+								$p = new permissions;
+								$p->add('menu_language_delete', 'temp');
+								$p->add('menu_item_group_delete', 'temp');
+
+							//execute delete
+								$database = new database;
+								$database->app_name = $this->app_name;
+								$database->app_uuid = $this->app_uuid;
+								$database->delete($array);
+								unset($array);
+
+							//revoke temporary permissions
+								$p->delete('menu_language_delete', 'temp');
+								$p->delete('menu_item_group_delete', 'temp');
+
+							//set message
+								message::add($text['message-delete']);
+							}
+					}
+			}
+		}
+
 		/**
-		 * restore the menu
+		 * restore the default menu
 		 */
-		public function restore() {
+		public function restore_default() {
 
 			//get the $apps array from the installed apps from the core and mod directories
 				$config_list = glob($_SERVER["DOCUMENT_ROOT"].PROJECT_PATH."/*/*/app_menu.php");
@@ -427,6 +603,7 @@ if (!class_exists('menu')) {
 									$menu_item_parent_uuid = $uuid_array[$menu['parent_uuid']] ?? null;
 									$menu_item_category = $menu['category'];
 									$menu_item_icon = $menu['icon'] ?? null;
+									$menu_item_icon_color = $menu['icon_color'] ?? null;
 									$menu_item_path = $menu['path'];
 									$menu_item_order = $menu['order'] ?? null;
 									$menu_item_description = $menu['desc'] ?? null;
@@ -471,6 +648,7 @@ if (!class_exists('menu')) {
 												$array['menu_items'][$x]['menu_item_link'] = $menu_item_path;
 												$array['menu_items'][$x]['menu_item_category'] = $menu_item_category;
 												$array['menu_items'][$x]['menu_item_icon'] = $menu_item_icon;
+												$array['menu_items'][$x]['menu_item_icon_color'] = $menu_item_icon_color;
 												if (!empty($menu_item_order)) {
 													$array['menu_items'][$x]['menu_item_order'] = $menu_item_order;
 												}
@@ -608,7 +786,8 @@ if (!class_exists('menu')) {
 					$menu_items = $menu_field['menu_items'];
 
 					//prepare the protected menus
-					$menu_item_title = ($menu_field['menu_item_protected'] == "true") ? $menu_field['menu_item_title'] : $menu_field['menu_language_title'];
+					//$menu_item_title = ($menu_field['menu_item_protected'] == "true") ? $menu_field['menu_item_title'] : $menu_field['menu_language_title'];
+					$menu_item_title = $menu_field['menu_language_title'];
 
 					//prepare the menu_tags according to the category
 					$menu_tags = '';
@@ -689,7 +868,8 @@ if (!class_exists('menu')) {
 						$menu_items = $submenu_field['menu_items'];
 
 					//prepare the protected menus
-						$menu_item_title = ($submenu_field['menu_item_protected'] == "true") ? $submenu_field['menu_item_title'] : $submenu_field['menu_language_title'];
+						//$menu_item_title = ($submenu_field['menu_item_protected'] == "true") ? $submenu_field['menu_item_title'] : $submenu_field['menu_language_title'];
+						$menu_item_title = $submenu_field['menu_language_title'];
 
 					//prepare the menu_tags according to the category
 						switch ($menu_item_category) {
@@ -744,8 +924,8 @@ if (!class_exists('menu')) {
 
 			//get the menu from the database
 				$sql = "select i.menu_item_link, l.menu_item_title as menu_language_title, ";
-				$sql .= "i.menu_item_title, i.menu_item_protected, i.menu_item_category, ";
-				$sql .= "i.menu_item_icon, i.menu_item_uuid, i.menu_item_parent_uuid ";
+				$sql .= "i.menu_item_title, i.menu_item_category, i.menu_item_icon, ";
+				$sql .= "i.menu_item_icon_color, i.menu_item_uuid, i.menu_item_parent_uuid ";
 				$sql .= "from v_menu_items as i, v_menu_languages as l ";
 				$sql .= "where i.menu_item_uuid = l.menu_item_uuid ";
 				$sql .= "and l.menu_language = :menu_language ";
@@ -814,7 +994,9 @@ if (!class_exists('menu')) {
 				}
 
 			//get the child menu from the database
-				$sql = "select i.menu_item_link, l.menu_item_title as menu_language_title, i.menu_item_title, i.menu_item_protected, i.menu_item_category, i.menu_item_icon, i.menu_item_uuid, i.menu_item_parent_uuid ";
+				$sql = "select i.menu_item_link, l.menu_item_title as menu_language_title, ";
+				$sql .= "i.menu_item_title, i.menu_item_category, i.menu_item_icon, ";
+				$sql .= "i.menu_item_icon_color, i.menu_item_uuid, i.menu_item_parent_uuid ";
 				$sql .= "from v_menu_items as i, v_menu_languages as l ";
 				$sql .= "where i.menu_item_uuid = l.menu_item_uuid ";
 				$sql .= "and l.menu_language = :menu_language ";
@@ -854,19 +1036,20 @@ if (!class_exists('menu')) {
 							$menu_item_link = $row['menu_item_link'];
 							$menu_item_category = $row['menu_item_category'];
 							$menu_item_icon = $row['menu_item_icon'];
+							$menu_item_icon_color = $row['menu_item_icon_color'];
 							$menu_item_uuid = $row['menu_item_uuid'];
 							$menu_item_parent_uuid = $row['menu_item_parent_uuid'];
 
 						//add the row to the array
 							$a[$x] = $row;
 
-						//prepare the protected menus
-							if ($row['menu_item_protected'] == "true") {
-								$a[$x]['menu_item_title'] = $row['menu_item_title'];
-							}
-							else {
-								$a[$x]['menu_item_title'] = $row['menu_language_title'];
-							}
+						//prepare the menus
+							//if ($row['menu_item_protected'] == "true") {
+							//	$a[$x]['menu_item_title'] = $row['menu_item_title'];
+							//}
+							//else {
+							$a[$x]['menu_item_title'] = $row['menu_language_title'];
+							//}
 
 						//get sub menu for children
 							if (!empty($menu_item_uuid)) {
@@ -915,7 +1098,7 @@ if (!class_exists('menu')) {
 						$p->delete('menu_add', 'temp');
 
 					//add the menu items
-						$this->restore();
+						$this->restore_default();
 				}
 		}
 
@@ -1010,7 +1193,7 @@ if (!class_exists('menu')) {
 						$mod_a_3 = ($menu_parent['menu_item_category'] == 'external') ? "target='_blank' " : null;
 						if ($this->settings->get('theme', 'menu_main_icons', true) === true) {
 							if (!empty($menu_parent['menu_item_icon']) && substr($menu_parent['menu_item_icon'], 0, 3) == 'fa-') { // font awesome icon
-								$menu_main_icon = "<span class='".escape($menu_parent['menu_item_icon'])."' title=\"".escape($menu_parent['menu_language_title'])."\"></span>";
+								$menu_main_icon = "<span class='".escape($menu_parent['menu_item_icon'])."' ".(!empty($menu_parent['menu_item_icon_color']) ? "style='color: ".$menu_parent['menu_item_icon_color']." !important;'" : null)." title=\"".escape($menu_parent['menu_language_title'])."\"></span>";
 							}
 							else {
 								$menu_main_icon = null;
@@ -1043,13 +1226,13 @@ if (!class_exists('menu')) {
 								$menu_sub_icon = null;
 								if ($this->settings->get('theme', 'menu_sub_icons', true) !== false) {
 									if (!empty($menu_sub['menu_item_icon']) && substr($menu_sub['menu_item_icon'], 0, 3) == 'fa-') { // font awesome icon
-										$menu_sub_icon = "<span class='".escape($menu_sub['menu_item_icon'])."'></span>";
+										$menu_sub_icon = "<span class='".escape($menu_sub['menu_item_icon'])."' style='".(!empty($menu_sub['menu_item_icon_color']) ? "color: ".$menu_sub['menu_item_icon_color']." !important;" : "opacity: 0.3;")."'></span>";
 									}
 									else {
 										$menu_sub_icon = null;
 									}
 								}
-								$html .= "						<li class='nav-item'><a class='nav-link' href='".$mod_a_2."' ".$mod_a_3.">".($this->settings->get('theme', 'menu_sub_icons', true) != false ? "<span class='fa-solid fa-minus d-inline-block d-sm-none float-left' style='margin: 4px 10px 0 25px;'></span>" : '').escape($menu_sub['menu_language_title']).$menu_sub_icon."</a></li>\n";
+								$html .= "						<li class='nav-item'><a class='nav-link' href='".$mod_a_2."' ".$mod_a_3." onclick='event.stopPropagation();'>".($this->settings->get('theme', 'menu_sub_icons', true) != false ? "<span class='fa-solid fa-minus d-inline-block d-sm-none float-left' style='margin: 4px 10px 0 25px;'></span>" : '').escape($menu_sub['menu_language_title']).$menu_sub_icon."</a></li>\n";
 								if ($columns > 1 && $column_current == 1 && ($index_sub+1) > (ceil(@sizeof($menu_parent['menu_items'])/2)-1)) {
 									$html .= "								</ul>\n";
 									$html .= "							</div>\n";
@@ -1078,9 +1261,9 @@ if (!class_exists('menu')) {
 							$this->settings->get('theme', 'header_user_visible', 'true') == 'true' &&	//app_defaults schema data type is 'text' but should be boolean here
 							$this->settings->get('theme', 'user_visible', 'true') == 'true'				//app_defaults schema data type is 'text' but should be boolean here
 					) {
-
 						//set (default) user graphic size and icon
 						$user_graphic = "<i class='".$this->settings->get('theme', 'body_header_icon_user', 'fa-solid fa-user-circle')."'></i>";
+
 						//overwrite user graphic with image from session, if exists
 						if ($this->settings->get('theme', 'body_header_user_image', true) == true && !empty($_SESSION['user']['contact_image']) && is_uuid($_SESSION['user']['contact_image'])) {
 							$user_graphic = "<span style=\"display: inline-block; vertical-align: middle; width: 15px; height: 15px; border-radius: 50%; margin-top: -2px; background-image: url('".PROJECT_PATH."/core/contacts/contact_attachment.php?id=".$_SESSION['user']['contact_image']."&action=download&sid=".session_id()."'); background-repeat: no-repeat; background-size: cover; background-position: center;\"></span>";
@@ -1090,13 +1273,15 @@ if (!class_exists('menu')) {
 						$html .= "			<a class='nav-link header_user d-none d-sm-block' href='show:usermenu' title=\"".$_SESSION['username']."\" onclick=\"event.preventDefault(); $('#body_header_user_menu').toggleFadeSlide();\">".($user_graphic ?? null)."<span class='d-none d-md-inline' style='margin-left: 7px;'>".escape($_SESSION['username'])."</span></a>";
 						$html .= "		</li>\n";
 					}
+
 				//domain name/selector
-					if (!empty($_SESSION['username']) && permission_exists('domain_select') && count($_SESSION['domains']) > 1 && $this->settings->get('theme', 'domain_visible', 'true') == 'true') {
+					if (permission_exists('domain_select') && $this->settings->get('theme', 'domain_visible', 'true') == 'true' && !empty($_SESSION['username']) && !empty($_SESSION['domains']) && count($_SESSION['domains']) > 1) {
 						$html .= "		<li class='nav-item'>\n";
 						$html .= "			<a class='nav-link header_domain header_domain_selector_domain d-block d-sm-none' href='select:domain' onclick='event.preventDefault();' data-toggle='collapse' data-target='#main_navbar' title='".$this->text['theme-label-open_selector']."'><span class='".$this->settings->get('theme', 'body_header_icon_domain', 'fa-solid fa-earth-americas')."'></span><span style='margin-left: 7px;'>".escape($_SESSION['domain_name'])."</span></a>";
 						$html .= "			<a class='nav-link header_domain header_domain_selector_domain d-none d-sm-block' href='select:domain' onclick='event.preventDefault();' title='".$this->text['theme-label-open_selector']."'><span class='".$this->settings->get('theme', 'body_header_icon_domain', 'fa-solid fa-earth-americas')."'></span><span class='d-none d-md-inline' style='margin-left: 7px;'>".escape($_SESSION['domain_name'])."</span></a>";
 						$html .= "		</li>\n";
 					}
+
 				//logout icon
 					if (!empty($_SESSION['username']) && isset($_SESSION['theme']['logout_icon_visible']) && $this->settings->get('theme', 'logout_icon_visible', 'false') == "true") {
 						$username_full = $_SESSION['username'].((count($_SESSION['domains']) > 1) ? "@".$_SESSION["user_context"] : null);
@@ -1144,7 +1329,7 @@ if (!class_exists('menu')) {
 						$html .= "		<div class='mt-2' style='font-size: 90%;'><i class='fa-solid fa-phone' style='margin-right: 5px; color: #00b043;'></i><strong>".$_SESSION['user']['extension'][0]['destination']."</strong></div>\n";
 					}
 					$html .= "			<div class='pt-2 mt-3' style='border-top: 1px solid ".color_adjust($this->settings->get('theme', 'body_header_shadow_color'), 0.05).";'>\n";
-					$html .= "				<a href='".PROJECT_PATH."/core/users/user_edit.php?id=user'>".$this->text['title-account_settings']."</a><br>\n";
+					$html .= "				<a href='".PROJECT_PATH."/core/users/user_profile.php'>".$this->text['title-user_profile']."</a><br>\n";
 					$html .= "				<a href='".PROJECT_PATH."/logout.php'>".$this->text['title-logout']."</a>\n";
 					$html .= "			</div>";
 					$html .= "		</div>";
@@ -1211,7 +1396,7 @@ if (!class_exists('menu')) {
 							$html .= "	<div class='menu_side_item_main_sub_icons' style='float: right; margin-right: -1px; ".($menu_side_state != 'expanded' ? "display: none;" : null)."'><i id='sub_arrow_".$menu_item_main['menu_item_uuid']."' class='sub_arrows ".$this->settings->get('theme', 'menu_side_item_main_sub_icon_expand', 'fa-solid fa-chevron-down')." fa-xs'></i></div>\n";
 						}
 						if (!empty($menu_item_main['menu_item_icon']) && substr($menu_item_main['menu_item_icon'], 0, 3) == 'fa-') { // font awesome icon
-							$html .= "<i class='menu_side_item_icon ".$menu_item_main['menu_item_icon']." fa-fw' style='z-index: 99800; margin-right: 8px;'></i>";
+							$html .= "<i class='menu_side_item_icon ".$menu_item_main['menu_item_icon']." fa-fw' style='z-index: 99800; margin-right: 8px; ".(!empty($menu_item_main['menu_item_icon_color']) ? "color: ".$menu_item_main['menu_item_icon_color']." !important;" : null)."'></i>";
 						}
 						$html .= "<span class='menu_side_item_title' style='".($menu_side_state != 'expanded' ? "display: none;" : null)."'>".$menu_item_main['menu_language_title']."</span>";
 						$html .= "</a>\n";
@@ -1222,7 +1407,7 @@ if (!class_exists('menu')) {
 									$menu_sub_icon = null;
 									if ($this->settings->get('theme', 'menu_sub_icons', true) !== false) {
 										if (!empty($menu_item_sub['menu_item_icon']) && substr($menu_item_sub['menu_item_icon'], 0, 3) == 'fa-') { // font awesome icon
-											$menu_sub_icon = "<span class='".escape($menu_item_sub['menu_item_icon']).(substr($menu_item_sub['menu_item_icon'], 0, 3) == 'fa-' ? ' fa-fw' : null)."'></span>";
+											$menu_sub_icon = "<span class='".escape($menu_item_sub['menu_item_icon']).(substr($menu_item_sub['menu_item_icon'], 0, 3) == 'fa-' ? ' fa-fw' : null)."' style='".(!empty($menu_item_sub['menu_item_icon_color']) ? "color: ".$menu_item_sub['menu_item_icon_color']." !important;" : "opacity: 0.3;")."'></span>";
 										}
 										else {
 											$menu_sub_icon = null;
@@ -1238,6 +1423,7 @@ if (!class_exists('menu')) {
 					$html .= "	<div style='height: 100px;'></div>\n";
 				}
 			$html .= "</div>\n";
+			$content_container_onclick = "";
 			if ($menu_side_state != 'expanded') {
 				$content_container_onclick = "onclick=\"clearTimeout(menu_side_contract_timer); if ($(window).width() >= 576) { menu_side_contract(); }\"";
 			}
@@ -1276,7 +1462,7 @@ if (!class_exists('menu')) {
 					$html .= "		<div class='mt-2' style='font-size: 90%;'><i class='fa-solid fa-phone' style='margin-right: 5px; color: #00b043;'></i><strong>".$_SESSION['user']['extension'][0]['destination']."</strong></div>\n";
 				}
 				$html .= "			<div class='pt-2 mt-3' style='border-top: 1px solid ".color_adjust($this->settings->get('theme', 'body_header_shadow_color'), 0.05).";'>\n";
-				$html .= "				<a href='".PROJECT_PATH."/core/users/user_edit.php?id=user'>".$this->text['title-account_settings']."</a><br>\n";
+				$html .= "				<a href='".PROJECT_PATH."/core/users/user_profile.php'>".$this->text['title-user_profile']."</a><br>\n";
 				$html .= "				<a href='".PROJECT_PATH."/logout.php'>".$this->text['title-logout']."</a>\n";
 				$html .= "			</div>";
 				$html .= "		</div>";
@@ -1335,4 +1521,3 @@ if (!class_exists('menu')) {
 		}
 
 	}
-}

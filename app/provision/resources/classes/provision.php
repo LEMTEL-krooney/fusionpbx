@@ -337,7 +337,7 @@
 							if (is_array($row) && sizeof($row) != 0) {
 
 								//checks either device enabled
-									if ($row['device_enabled'] != 'true') {
+									if ($row['device_enabled'] === false) {
 										syslog(LOG_WARNING, '['.$_SERVER['REMOTE_ADDR']."] provision attempted but the device is not enabled for ".escape($device_address));
 										if ($this->settings->get('provision','debug', false)) {
 											echo "<br/>device disabled<br/>";
@@ -353,6 +353,7 @@
 									$sql .= "set device_provisioned_date = :device_provisioned_date, device_provisioned_method = :device_provisioned_method, device_provisioned_ip = :device_provisioned_ip, device_provisioned_agent = :device_provisioned_agent ";
 									$sql .= "where domain_uuid = :domain_uuid ";
 									$sql .= "and device_address = :device_address  ";
+									$sql .= "and (device_provisioned_date is null or device_provisioned_date < NOW() - INTERVAL '30 seconds') ";
 									$parameters['domain_uuid'] = $domain_uuid;
 									$parameters['device_address'] = strtolower($device_address);
 									$parameters['device_provisioned_date'] = 'now()';
@@ -383,7 +384,7 @@
 							if (empty($device_template)) {
 								$sql = "select * from v_devices ";
 								$sql .= "where domain_uuid = :domain_uuid ";
-								$sql .= "and device_enabled = 'true' ";
+								$sql .= "and device_enabled = true ";
 								$sql .= "limit 1 ";
 								$parameters['domain_uuid'] = $domain_uuid;
 								$row = $this->database->select($sql, $parameters, 'row');
@@ -543,7 +544,7 @@
 								$array['devices'][$x]['device_uuid'] = $device_uuid;
 								$array['devices'][$x]['device_address'] = $device_address;
 								$array['devices'][$x]['device_vendor'] = $device_vendor;
-								$array['devices'][$x]['device_enabled'] = 'true';
+								$array['devices'][$x]['device_enabled'] = true;
 								$array['devices'][$x]['device_template'] = $device_template;
 								$array['devices'][$x]['device_description'] = $_SERVER['HTTP_USER_AGENT'];
 
@@ -572,7 +573,7 @@
 				if (is_uuid($device_uuid)) {
 					$sql = "select * from v_devices ";
 					$sql .= "where device_uuid = :device_uuid ";
-					$sql .= "and device_enabled = 'true' ";
+					$sql .= "and device_enabled = true ";
 					$parameters['device_uuid'] = $device_uuid;
 					$row = $this->database->select($sql, $parameters, 'row');
 					if (is_array($row) && sizeof($row) != 0) {
@@ -588,7 +589,7 @@
 							$parameters['device_uuid'] = $device_uuid;
 							$row = $this->database->select($sql, $parameters, 'row');
 							if (is_array($row) && sizeof($row) != 0) {
-								if ($row["device_enabled"] == "true") {
+								if ($row["device_enabled"]) {
 									$device_label = $row["device_label"];
 
 									//if the device vendor match then use the alternate device template
@@ -613,7 +614,7 @@
 				if (is_uuid($device_uuid) && is_uuid($device_profile_uuid)) {
 					$sql = "select * from v_device_profile_settings ";
 					$sql .= "where device_profile_uuid = :device_profile_uuid ";
-					$sql .= "and profile_setting_enabled = 'true' ";
+					$sql .= "and profile_setting_enabled = true ";
 					$parameters['device_profile_uuid'] = $device_profile_uuid;
 					$device_profile_settings = $this->database->select($sql, $parameters, 'all');
 					if (is_array($device_profile_settings) && sizeof($device_profile_settings) != 0) {
@@ -630,7 +631,7 @@
 				if (is_uuid($device_uuid)) {
 					$sql = "select * from v_device_settings ";
 					$sql .= "where device_uuid = :device_uuid ";
-					$sql .= "and device_setting_enabled = 'true' ";
+					$sql .= "and device_setting_enabled = true ";
 					$parameters['device_uuid'] = $device_uuid;
 					$device_settings = $this->database->select($sql, $parameters, 'all');
 					if (is_array($device_settings) && sizeof($device_settings) != 0) {
@@ -660,17 +661,31 @@
 				$view->cache_dir = sys_get_temp_dir();
 				$view->init();
 
-			//replace the variables in the template in the future loop through all the line numbers to do a replace for each possible line number
+			//replace the variables in the template in the future, loop through all the line numbers to do a replace for each possible line number
 
-				//create a device address with back slashes for backwards compatability
+				//create a device address with backslashes for backwards compatibility
 					//$address_dash = substr($device_address, 0,2).'-'.substr($device_address, 2,2).'-'.substr($device_address, 4,2).'-'.substr($device_address, 6,2).'-'.substr($device_address, 8,2).'-'.substr($device_address, 10,2);
 
 				//get the provisioning information
 					if (is_uuid($device_uuid)) {
+						//get the extensions from the database
+							$sql = "select extension_uuid as contact_uuid, directory_first_name, directory_last_name, ";
+							$sql .= "effective_caller_id_name, effective_caller_id_number, ";
+							$sql .= "number_alias, extension, call_group ";
+							$sql .= "from v_extensions ";
+							$sql .= "where domain_uuid = :domain_uuid ";
+							$sql .= "order by extension asc ";
+							$parameters['domain_uuid'] = $domain_uuid;
+							$extensions = $this->database->select($sql, $parameters, 'all');
+							foreach($extensions as $row) {
+								$extension_labels[$row['extension']]['caller_id_name'] = $row['effective_caller_id_name'];
+							}
+							unset($sql, $parameters);
+
 						//get the device lines array
 							$sql = "select * from v_device_lines ";
 							$sql .= "where device_uuid = :device_uuid ";
-							$sql .= "and (enabled = 'true' or enabled is null or enabled = '') ";
+							$sql .= "and (enabled = true or enabled is null) ";
 							$parameters['device_uuid'] = $device_uuid;
 							//$database_device_lines = $this->database->select($sql, $parameters, 'all');
 							foreach ($this->database->select($sql, $parameters, 'all') as $row) {
@@ -737,7 +752,7 @@
 											$device_lines[$device_key_line]['line_keys'] = $row['device_key_value'];
 										}
 
-										//kept temporarily for backwards comptability to allow custom templates to be updated
+										//kept temporarily for backwards compatibility to allow custom templates to be updated
 										$device_keys[$id] = $row;
 										$device_keys[$id]['device_key_owner'] = "profile";
 									}
@@ -796,26 +811,31 @@
 							}
 							unset($sql, $parameters, $keys);
 
+						//replace the ${caller_id_name} with the extensions caller id name
+							if (is_array($device_keys)) {
+								foreach($device_keys as $row) {
+									//set the variables
+									$id = $row['device_key_id'];
+									$category = $row['device_key_category'];
+
+									//build the device keys array
+									if ($row['device_key_label'] == '${caller_id_name}' && is_numeric($row['device_key_value'])) {
+										$device_keys[$category][$id]['device_key_label'] = $extension_labels[$row['device_key_value']]['caller_id_name'];
+									}
+								}
+							}
+
 						//set the variables
 							if (is_array($device_lines) && sizeof($device_lines) != 0) {
 								foreach($device_lines as $row) {
 									//set the variables
 										$line_number = $row['line_number'];
 										$register_expires = $row['register_expires'];
-										$sip_transport = strtolower($row['sip_transport']);
-										$sip_port = $row['sip_port'];
+										$sip_transport = strtolower($row['sip_transport'] ?? 'tcp');
+										$sip_port = $row['sip_port'] ?? '5060';
 
 									//set defaults
 										if (empty($register_expires)) { $register_expires = "120"; }
-										if (empty($sip_transport)) { $sip_transport = "tcp"; }
-										if (!isset($sip_port)) {
-											if ($line_number == "" || $line_number == "1") {
-												$sip_port = "5060";
-											}
-											else {
-												$sip_port = "506".($line_number + 1);
-											}
-										}
 
 									//convert seconds to minutes for grandstream
 										if ($device_vendor == 'grandstream') {
@@ -905,7 +925,7 @@
 							$sql .= "number_alias, extension, call_group ";
 							$sql .= "from v_extensions ";
 							$sql .= "where domain_uuid = :domain_uuid ";
-							$sql .= "and enabled = 'true' ";
+							$sql .= "and enabled = true ";
 							$sql .= "and directory_visible = 'true' ";
 							$sql .= "order by directory_first_name, effective_caller_id_name asc ";
 							$parameters['domain_uuid'] = $domain_uuid;
@@ -1150,27 +1170,68 @@
 					}
 
 				//get the time zone
-					$time_zone_name = $this->settings->get('domain','time_zone', '');
-					if (!empty($time_zone_name)) {
-						$time_zone_offset_raw = get_time_zone_offset($time_zone_name)/3600;
-						$time_zone_offset_hours = floor($time_zone_offset_raw);
-						$time_zone_offset_minutes = ($time_zone_offset_raw - $time_zone_offset_hours) * 60;
-						$time_zone_offset_minutes = number_pad($time_zone_offset_minutes, 2);
-						if ($time_zone_offset_raw > 0) {
-							$time_zone_offset_hours = number_pad($time_zone_offset_hours, 2);
-							$time_zone_offset_hours = "+".$time_zone_offset_hours;
+					$time_zone = $this->settings->get('domain','time_zone', 'UTC');
+
+				//auto calculate the daylight savings settings
+					if ($this->settings->get('provision','daylight_savings_auto', true)) {
+						//initialize the variables
+						$daylight_savings_start = null;
+						$daylight_savings_end = null;
+
+						//prepare the daylight saving dates and build the transitions
+						date_default_timezone_set($time_zone);
+						$current_year = date('Y');
+						$tz = new DateTimeZone($time_zone);
+						$start_of_year = new DateTime($current_year.'-01-01 00:00:00', $tz);
+						$end_of_year = new DateTime($current_year.'-12-31 23:59:59', $tz);
+						$transitions = $tz->getTransitions($start_of_year->getTimestamp(), $end_of_year->getTimestamp());
+
+						//add the daylight savings to the provision array
+						foreach ($transitions as $transition) {
+							if ($transition['isdst']) {
+								//daylight savings time
+								if ($daylight_savings_start === null || $transition['ts'] < $daylight_savings_start) {
+									$daylight_savings_start = $transition['ts'];
+								}
+							} else {
+								//standard time
+								$standard_offset_seconds = $transition['offset'];
+							}
 						}
-						else {
-							$time_zone_offset_hours = str_replace("-", "", $time_zone_offset_hours);
-							$time_zone_offset_hours = "-".number_pad($time_zone_offset_hours, 2);
+
+						//find the end of daylight saving time
+						foreach ($transitions as $transition) {
+							if (!$transition['isdst']) {
+								// daylight saving time end
+								if ($daylight_savings_start !== null && $transition['ts'] > $daylight_savings_start) {
+									$daylight_savings_end = $transition['ts'];
+									break;
+								}
+							}
 						}
-						$time_zone_offset = $time_zone_offset_hours.":".$time_zone_offset_minutes;
-						if (!isset($provision["time_zone_offset"])) {
-							$provision["time_zone_offset"] = $time_zone_offset;
+
+						//prepare the provision array
+						if ($daylight_savings_start !== null) {
+							$provision["daylight_savings_start"] = date('Y-m-d H:i:s', $daylight_savings_start);
+							$provision["daylight_savings_start_month"] = date('m', $daylight_savings_start);
+							$provision["daylight_savings_start_day"] = date('d', $daylight_savings_start);
+							$provision["daylight_savings_start_time"] = date('H', $daylight_savings_start);
 						}
+						if ($daylight_savings_end !== null) {
+							$provision["daylight_savings_end"] = date('Y-m-d H:i:s', $daylight_savings_end);
+							$provision["daylight_savings_end_month"] = date('m', $daylight_savings_end);
+							$provision["daylight_savings_end_day"] = date('d', $daylight_savings_end);
+							$provision["daylight_savings_end_time"] = date('H', $daylight_savings_end);
+						}
+
+						//add a generic gmt_offset
+						$provision["gmt_offset"] = $standard_offset_seconds;
+
+						//set daylight savings settings for polycom
+						$provision["polycom_gmt_offset"] = $standard_offset_seconds;
 					}
 
-				//set the daylight savings time
+				//set daylight savings settings time for yealink
 					if (!isset($provision["yealink_time_zone_start_time"])) {
 						$provision["yealink_time_zone_start_time"] = $provision["daylight_savings_start_month"]."/".$provision["daylight_savings_start_day"]."/".$provision["daylight_savings_start_time"];
 					}
@@ -1345,10 +1406,10 @@
 										$provision_dir_array = explode(";", $provision["path"]);
 										if (is_array($provision_dir_array)) {
 											foreach ($provision_dir_array as $directory) {
-												//destinatino file path
+												//destination file path
 													$dest_path = path_join($directory, $file_name);
 
-													if ($device_enabled == 'true') {
+													if ($device_enabled) {
 														//output template to string for header processing
 															$file_contents = $this->render();
 

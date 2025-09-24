@@ -153,10 +153,9 @@
 	unset($parameters);
 
 //get the email queue settings
-	$setting = new settings(["domain_uuid" => $domain_uuid]);
-	$smtp_from = $setting->get('email', 'smtp_from');
-	$smtp_from_name = $setting->get('email', 'smtp_from_name', $smtp_from);
-	$save_response = $setting->get('email_queue', 'save_response');
+	$smtp_from = $settings->get('email', 'smtp_from');
+	$smtp_from_name = $settings->get('email', 'smtp_from_name', $smtp_from);
+	$save_response = $settings->get('email_queue', 'save_response');
 
 //debug information
 	if (!empty($debug) && $debug == 'true') {
@@ -187,9 +186,6 @@
 	if (empty($template_subcategory)) {
 		$message .= "template_subcategory\n";
 	}
-	if (empty($template_subcategory)) {
-		$message .= "template_subcategory\n";
-	}
 	if (empty($domain_name)) {
 		$message .= "domain_name\n";
 	}
@@ -201,7 +197,7 @@
 
 //get the email template from the database
 	$sql = "select template_subject, template_body from v_email_templates ";
-	$sql .= "where template_enabled = 'true' ";
+	$sql .= "where template_enabled = true ";
 	$sql .= "and template_language = :template_language ";
 	$sql .= "and template_category = :template_category ";
 	$sql .= "and template_subcategory = :template_subcategory ";

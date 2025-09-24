@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -144,7 +144,7 @@
 
 				//if primary, unmark other primary addresses
 					if ($email_primary) {
-						$sql = "update v_contact_addresses set address_primary = 0 ";
+						$sql = "update v_contact_addresses set address_primary = false ";
 						$sql .= "where domain_uuid = :domain_uuid ";
 						$sql .= "and contact_uuid = :contact_uuid ";
 						$parameters['domain_uuid'] = $domain_uuid;
@@ -181,7 +181,7 @@
 					$array['contact_addresses'][0]['address_country'] = $address_country;
 					$array['contact_addresses'][0]['address_latitude'] = $address_latitude;
 					$array['contact_addresses'][0]['address_longitude'] = $address_longitude;
-					$array['contact_addresses'][0]['address_primary'] = $address_primary ? 1 : 0;
+					$array['contact_addresses'][0]['address_primary'] = $address_primary;
 					$array['contact_addresses'][0]['address_description'] = $address_description;
 
 					$database = new database;
@@ -262,8 +262,8 @@
 	}
 	echo "	</div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'contact_edit.php?id='.urlencode($contact_uuid)]);
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'contact_edit.php?id='.urlencode($contact_uuid)]);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -435,10 +435,17 @@
 	echo "	".$text['label-primary']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<select class='formfld' name='address_primary' id='address_primary'>\n";
-	echo "		<option value='0'>".$text['option-false']."</option>\n";
-	echo "		<option value='1' ".(!empty($address_primary) && $address_primary ? "selected" : null).">".$text['option-true']."</option>\n";
-	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
+	}
+	echo "		<select class='formfld' id='address_primary' name='address_primary'>\n";
+	echo "			<option value='true' ".($address_primary === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "			<option value='false' ".($address_primary === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "		</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
+	}
 	echo "<br />\n";
 	echo $text['description-address_primary']."\n";
 	echo "</td>\n";

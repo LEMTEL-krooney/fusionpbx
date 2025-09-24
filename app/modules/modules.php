@@ -60,20 +60,25 @@
 	}
 
 //set from session variables
-	$list_row_edit_button = !empty($_SESSION['theme']['list_row_edit_button']['boolean']) ? $_SESSION['theme']['list_row_edit_button']['boolean'] : 'false';
+	$list_row_edit_button = $settings->get('theme', 'list_row_edit_button', false);
 
 //process the http post data by action
 	if ($action != '' && is_array($modules) && @sizeof($modules) != 0) {
 		switch ($action) {
 			case 'start':
+				//start the modules
 				$obj = new modules;
 				$obj->start($modules);
+				//add a delay so that modules have time to load
+				sleep(1);
 				break;
 			case 'stop':
+				//stop the modules
 				$obj = new modules;
 				$obj->stop($modules);
 				break;
 			case 'toggle':
+				//toggle enables or disables (stops) the modules
 				if (permission_exists('module_edit')) {
 					$obj = new modules;
 					$obj->toggle($modules);
@@ -87,6 +92,7 @@
 				break;
 		}
 
+		//redirect to display updates
 		header('Location: modules.php'.($search != '' ? '?search='.urlencode($search) : null));
 		exit;
 	}
@@ -127,18 +133,18 @@
 	echo "	<div class='heading'><b>".$text['header-modules']."</b><div class='count'>".number_format($module_count)."</div></div>\n";
 	echo "	<div class='actions'>\n";
 	if (permission_exists('module_edit') && $modules && $esl->is_connected()) {
-		echo button::create(['type'=>'button','label'=>$text['button-stop'],'icon'=>$_SESSION['theme']['button_icon_stop'],'onclick'=>"modal_open('modal-stop','btn_stop');"]);
-		echo button::create(['type'=>'button','label'=>$text['button-start'],'icon'=>$_SESSION['theme']['button_icon_start'],'onclick'=>"modal_open('modal-start','btn_start');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-stop'],'icon'=>$settings->get('theme', 'button_icon_stop'),'onclick'=>"modal_open('modal-stop','btn_stop');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-start'],'icon'=>$settings->get('theme', 'button_icon_start'),'onclick'=>"modal_open('modal-start','btn_start');"]);
 	}
-	echo button::create(['type'=>'button','label'=>$text['button-refresh'],'icon'=>$_SESSION['theme']['button_icon_refresh'],'style'=>'margin-right: 15px;','link'=>'modules.php']);
+	echo button::create(['type'=>'button','label'=>$text['button-refresh'],'icon'=>$settings->get('theme', 'button_icon_refresh'),'style'=>'margin-right: 15px;','link'=>'modules.php']);
 	if (permission_exists('module_add')) {
-		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','link'=>'module_edit.php']);
+		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$settings->get('theme', 'button_icon_add'),'id'=>'btn_add','link'=>'module_edit.php']);
 	}
 	if (permission_exists('module_edit') && $modules) {
-		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'id'=>'btn_toggle','name'=>'btn_toggle','style'=>'display: none;','onclick'=>"modal_open('modal-toggle','btn_toggle');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$settings->get('theme', 'button_icon_toggle'),'id'=>'btn_toggle','name'=>'btn_toggle','style'=>'display: none;','onclick'=>"modal_open('modal-toggle','btn_toggle');"]);
 	}
 	if (permission_exists('module_delete') && $modules) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','name'=>'btn_delete','style'=>'display: none;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$settings->get('theme', 'button_icon_delete'),'id'=>'btn_delete','name'=>'btn_delete','style'=>'display: none;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
@@ -185,7 +191,7 @@
 		}
 		echo "<th class='center'>".$text['label-enabled']."</th>\n";
 		echo "<th class='hide-sm-dn' style='min-width: 40%;'>".$text['label-description']."</th>\n";
-		if (permission_exists('module_edit') && $list_row_edit_button == 'true') {
+		if (permission_exists('module_edit') && $list_row_edit_button) {
 			echo "<td class='action-button'>&nbsp;</td>\n";
 		}
 		echo "</tr>\n";
@@ -202,8 +208,12 @@
 					echo "</tr>\n";
 					write_header($row["module_category"]);
 				}
+			$list_row_url = '';
 			if (permission_exists('module_edit')) {
 				$list_row_url = "module_edit.php?id=".urlencode($row['module_uuid']);
+				if ($row['domain_uuid'] != $_SESSION['domain_uuid'] && permission_exists('domain_select')) {
+					$list_row_url .= '&domain_uuid='.urlencode($row['domain_uuid']).'&domain_change=true';
+				}
 			}
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
 			if (permission_exists('module_edit') || permission_exists('module_delete')) {
@@ -235,7 +245,7 @@
 				}
 				else {
 					echo "	<td class='hide-xs'>\n";
-					echo $row['module_enabled'] == 'true' ? "<strong style='color: red;'>".$text['label-stopped']."</strong>" : $text['label-stopped']." ".escape($notice ?? null);
+					echo $row['module_enabled'] === true ? "<strong style='color: red;'>".$text['label-stopped']."</strong>" : $text['label-stopped']." ".escape($notice ?? null);
 					echo "	</td>\n";
 					if (permission_exists('module_edit')) {
 						echo "	<td class='no-link center'>";
@@ -249,17 +259,17 @@
 			}
 			if (permission_exists('module_edit')) {
 				echo "	<td class='no-link center'>";
-				echo button::create(['type'=>'submit','class'=>'link','label'=>$text['label-'.$row['module_enabled']],'title'=>$text['button-toggle'],'onclick'=>"list_self_check('checkbox_".$x."'); list_action_set('toggle'); list_form_submit('form_list')"]);
+				echo button::create(['type'=>'submit','class'=>'link','label'=>$text['label-'.($row['module_enabled'] ? 'true' : 'false')],'title'=>$text['button-toggle'],'onclick'=>"list_self_check('checkbox_".$x."'); list_action_set('toggle'); list_form_submit('form_list')"]);
 			}
 			else {
 				echo "	<td class='center'>";
-				echo $text['label-'.$row['module_enabled']];
+				echo $text['label-'.($row['module_enabled'] ? 'true' : 'false')];
 			}
 			echo "	</td>\n";
 			echo "	<td class='description overflow hide-sm-dn'>".escape($row["module_description"])."&nbsp;</td>\n";
-			if (permission_exists('module_edit') && $list_row_edit_button == 'true') {
+			if (permission_exists('module_edit') && $list_row_edit_button) {
 				echo "	<td class='action-button'>";
-				echo button::create(['type'=>'button','title'=>$text['button-edit'],'icon'=>$_SESSION['theme']['button_icon_edit'],'link'=>$list_row_url]);
+				echo button::create(['type'=>'button','title'=>$text['button-edit'],'icon'=>$settings->get('theme', 'button_icon_edit'),'link'=>$list_row_url]);
 				echo "	</td>\n";
 			}
 			echo "</tr>\n";

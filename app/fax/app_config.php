@@ -312,7 +312,23 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "The information contained in this facsimile is intended for the sole confidential use of the recipient(s) designated above, and may contain confidential and legally privileged information. If you are not the intended recipient, you are hereby notified that the review, disclosure, dissemination, distribution, copying, duplication in any form, and taking of any action in regards to the contents of this document - except with respect to its direct delivery to the intended recipient - is strictly prohibited.  Please notify the sender immediately and destroy this cover sheet and all attachments.  If stored or viewed electronically, please permanently delete it from your system.";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Notice displayed in the footer of the cover sheet.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Default text to populate the Footer field of a new fax (displayed below the box on the cover sheet).";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "034a7f00-9455-4354-978e-7978d193f675";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "fax";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "cover_message";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Default text to populate the Message field of a new fax (displayed inside the box on the cover sheet).";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "760eb1ec-249a-4482-bdc4-3fd35d604db9";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "fax";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "cover_message_height";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "6.15";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the default height (inches) of the Message box on the cover sheet.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "e907df99-6b3a-4864-bd11-681888f20289";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "fax";
@@ -320,7 +336,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Default information displayed beneath the logo in the header of the cover sheet.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Default text to populate the Header field of a new fax (displayed near the top of the cover sheet, beneath the logo).";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "8338a404-3966-416e-b4f9-a1ac36c37bd1";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "fax";
@@ -489,6 +505,14 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "300-399";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the suggested extension range(s) for fax servers";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "f91cf33c-7f89-11f0-88f8-abceb7c1c991";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "fax";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "upload_file_limit";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "5";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the upload file limit for Fax File(s)";
 
 	//schema details
 		$y=0;
@@ -574,7 +598,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enable SSL or TLS encryption.";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "fax_email_connection_validate";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "boolean";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Validate certificate or not.";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "fax_email_connection_username";

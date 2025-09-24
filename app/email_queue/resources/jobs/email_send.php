@@ -10,7 +10,6 @@
 	}
 
 //include files
-	include "resources/classes/permissions.php";
 	include_once "resources/phpmailer/class.phpmailer.php";
 	include_once "resources/phpmailer/class.smtp.php";
 
@@ -42,38 +41,30 @@
 	}
 
 //define the process id file
-	$pid_file = "/var/run/fusionpbx/email_send".".".$email_queue_uuid.".pid";
+	$pid_file = '/var/run/fusionpbx/email_send.'.$email_queue_uuid.'.pid';
 	//echo "pid_file: ".$pid_file."\n";
 
 //function to check if the process exists
-	function process_exists($file = false) {
-
-		//set the default exists to false
-		$exists = false;
-
-		//check to see if the process is running
-		if (file_exists($file)) {
-			$pid = file_get_contents($file);
-			if (function_exists('posix_getsid')) {
-				//check if the process is running
-				$pid = posix_getsid($pid);
-				if ($pid === null || $pid === 0) {
-					//process is not running
-					$exists = false;
-				}
-				else {
-					//process is running
-					$exists = true;
-				}
-			}
-			else {
-				//file exists assume the pid is running
-				$exists = true;
-			}
+	function process_exists($file = '') {
+		//check if the file exists return false if not found
+		if (!file_exists($file)) {
+			return false;
 		}
 
-		//return the result
-		return $exists;
+		//check to see if the process id is valid
+		$pid = file_get_contents($file);
+		if (filter_var($pid, FILTER_VALIDATE_INT) === false) {
+			return false;
+		}
+
+		//check if the process is running
+		exec('ps -p '.$pid, $output);
+		if (count($output) > 1) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 //check to see if the process exists
@@ -157,7 +148,7 @@
 //get the email settings
 	$retry_limit = $settings->get('email_queue', 'retry_limit');
 	$transcribe_enabled = $settings->get('transcribe', 'enabled', false);
-	$save_response = $settings->get('email_queue', 'save_response');
+	$save_response = $settings->get('email_queue', 'save_response', false);
 
 //set defaults
 	if (empty($email_retry_count)) {
@@ -190,7 +181,7 @@
 		//$voicemail_name_base64 = $row["voicemail_name_base64"];
 		//$voicemail_tutorial = $row["voicemail_tutorial"];
 		if (gettype($voicemail_transcription_enabled) === 'string') {
-			$voicemail_transcription_enabled = ($voicemail_transcription_enabled === 'true') ? true : false;
+			$voicemail_transcription_enabled = ($voicemail_transcription_enabled === true) ? true : false;
 		}
 	}
 	unset($parameters);
@@ -298,7 +289,7 @@
 	//echo "Body: ".$email_body."\n";
 
 //update the message transcription
-	if (isset($voicemail_transcription_enabled) && $voicemail_transcription_enabled == 'true' && isset($transcribe_message)) {
+	if (isset($voicemail_transcription_enabled) && $voicemail_transcription_enabled && isset($transcribe_message)) {
 		$sql = "update v_voicemail_messages ";
 		$sql .= "set message_transcription = :message_transcription ";
 		$sql .= "where voicemail_message_uuid = :voicemail_message_uuid; ";
@@ -369,7 +360,7 @@
 			$parameters['email_body'] = $email_body;
 			$parameters['email_transcription'] = $transcribe_message;
 		}
-		if (isset($save_response) && $save_response == 'true') {
+		if ($save_response) {
 			$sql .= "email_response = :email_response, ";
 			$parameters['email_response'] = $email_settings."\n".$email_response;
 		}

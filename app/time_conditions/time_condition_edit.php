@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -80,7 +80,7 @@
 		if (permission_exists('time_condition_context')) {
 			$dialplan_context = $_POST["dialplan_context"];
 		}
-		$dialplan_enabled = $_POST["dialplan_enabled"] ?? 'false';
+		$dialplan_enabled = $_POST["dialplan_enabled"];
 		$dialplan_description = $_POST["dialplan_description"];
 
 		if (!permission_exists('time_condition_domain')) {
@@ -662,7 +662,6 @@
 
 //set the defaults
 	if (empty($dialplan_context)) { $dialplan_context = $_SESSION['domain_name']; }
-	if (empty($dialplan_enabled)) { $dialplan_enabled = 'true'; }
 
 //create token
 	$object = new token;
@@ -966,11 +965,11 @@ echo "<form method='post' name='frm' id='frm' onsubmit=\"return check_submit();\
 echo "<div class='action_bar' id='action_bar'>\n";
 echo "	<div class='heading'><b>".$text['title-time_condition']."</b></div>\n";
 echo "	<div class='actions'>\n";
-echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>PROJECT_PATH.'/app/time_conditions/time_conditions.php?app_uuid=4b821450-926b-175a-af93-a03c441818b1']);
+echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>PROJECT_PATH.'/app/time_conditions/time_conditions.php?app_uuid=4b821450-926b-175a-af93-a03c441818b1']);
 if ($action == 'update' && permission_exists('dialplan_edit')) {
 	echo button::create(['type'=>'button','label'=>$text['button-dialplan'],'icon'=>'list','style'=>'margin-right: 15px;','link'=>PROJECT_PATH.'/app/dialplans/dialplan_edit.php?id='.urlencode($dialplan_uuid).'&app_uuid=4b821450-926b-175a-af93-a03c441818b1']);
 }
-echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save']);
+echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save']);
 echo "	</div>\n";
 echo "	<div style='clear: both;'></div>\n";
 echo "</div>\n";
@@ -1307,17 +1306,16 @@ if ($action == 'update') {
 	echo "    ".$text['label-enabled']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
-		echo "	<label class='switch'>\n";
-		echo "		<input type='checkbox' id='dialplan_enabled' name='dialplan_enabled' value='true' ".($dialplan_enabled == 'true' ? "checked='checked'" : null).">\n";
-		echo "		<span class='slider'></span>\n";
-		echo "	</label>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "	<select class='formfld' id='dialplan_enabled' name='dialplan_enabled'>\n";
-		echo "		<option value='true' ".($dialplan_enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-		echo "		<option value='false' ".($dialplan_enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-		echo "	</select>\n";
+	echo "	<select class='formfld' id='dialplan_enabled' name='dialplan_enabled'>\n";
+	echo "		<option value='true' ".($dialplan_enabled === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($dialplan_enabled === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
 	echo "<br />\n";
 	echo "</td>\n";

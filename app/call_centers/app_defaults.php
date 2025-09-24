@@ -93,8 +93,8 @@ if ($domains_processed == 1) {
 
 				//add the recording path if needed
 					if ($row['queue_greeting'] != '') {
-						if (file_exists($setting->get('switch','recordings').'/'.$row['domain_name'].'/'.$row['queue_greeting'])) {
-							$queue_greeting_path = $setting->get('switch','recordings').'/'.$row['domain_name'].'/'.$row['queue_greeting'];
+						if (file_exists($settings->get('switch','recordings').'/'.$row['domain_name'].'/'.$row['queue_greeting'])) {
+							$queue_greeting_path = $settings->get('switch','recordings').'/'.$row['domain_name'].'/'.$row['queue_greeting'];
 						}
 						else {
 							$queue_greeting_path = trim($row['queue_greeting']);
@@ -150,10 +150,10 @@ if ($domains_processed == 1) {
 						$array['dialplans'][$id]["dialplan_name"] = $row["queue_name"];
 						$array['dialplans'][$id]["dialplan_number"] = $row["queue_extension"];
 						$array['dialplans'][$id]["dialplan_context"] = $row['domain_name'];
-						$array['dialplans'][$id]["dialplan_continue"] = "false";
+						$array['dialplans'][$id]["dialplan_continue"] = false;
 						$array['dialplans'][$id]["dialplan_xml"] = $dialplan_xml;
 						$array['dialplans'][$id]["dialplan_order"] = "230";
-						$array['dialplans'][$id]["dialplan_enabled"] = "true";
+						$array['dialplans'][$id]["dialplan_enabled"] = true;
 						$array['dialplans'][$id]["dialplan_description"] = $row["queue_description"];
 						$array['dialplans'][$id]["app_uuid"] = "95788e50-9500-079e-2807-fd530b0ea370";
 					}

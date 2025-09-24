@@ -17,7 +17,7 @@
 
  The Initial Developer of the Original Code is
  Mark J Crane <markjcrane@fusionpbx.com>
- Portions created by the Initial Developer are Copyright (C) 2008-2024
+ Portions created by the Initial Developer are Copyright (C) 2008-2025
  the Initial Developer. All Rights Reserved.
 
  Contributor(s):
@@ -75,7 +75,7 @@
 		$contact_setting_name = strtolower($_POST["contact_setting_name"]);
 		$contact_setting_value = $_POST["contact_setting_value"];
 		$contact_setting_order = $_POST["contact_setting_order"] ?? null;
-		$contact_setting_enabled = strtolower($_POST["contact_setting_enabled"]);
+		$contact_setting_enabled = strtolower($_POST["contact_setting_enabled"]) ?? false;
 		$contact_setting_description = $_POST["contact_setting_description"];
 	}
 
@@ -228,8 +228,8 @@
 	}
 	echo "	</div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'contact_edit.php?id='.urlencode($contact_uuid ?? '')]);
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'contact_edit.php?id='.urlencode($contact_uuid ?? '')]);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -296,19 +296,9 @@
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
 		echo "	<select name='contact_setting_order' class='formfld'>\n";
-		$i=0;
-		while($i<=999) {
-			$selected = ($i == $contact_setting_order) ? "selected" : null;
-			if (strlen($i) == 1) {
-				echo "		<option value='00$i' ".$selected.">00$i</option>\n";
-			}
-			if (strlen($i) == 2) {
-				echo "		<option value='0$i' ".$selected.">0$i</option>\n";
-			}
-			if (strlen($i) == 3) {
-				echo "		<option value='$i' ".$selected.">$i</option>\n";
-			}
-			$i++;
+		echo "		<option value=''></option>\n";
+		for ($i = 0; $i <=999; $i++) {
+			echo "	<option value='".str_pad($i, 3, '0', STR_PAD_LEFT)."' ".(isset($contact_setting_order) && $i == $contact_setting_order ? "selected='selected'" : null).">".str_pad($i, 3, '0', STR_PAD_LEFT)."</option>\n";
 		}
 		echo "	</select>\n";
 		echo "	<br />\n";
@@ -322,20 +312,17 @@
 	echo "    ".$text['label-enabled']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "    <select class='formfld' name='contact_setting_enabled'>\n";
-	if ($contact_setting_enabled == "true") {
-		echo "    <option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "    <option value='true'>".$text['label-true']."</option>\n";
+	echo "		<select class='formfld' id='contact_setting_enabled' name='contact_setting_enabled'>\n";
+	echo "			<option value='false' ".($contact_setting_enabled === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "			<option value='true' ".($contact_setting_enabled === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
-	if ($contact_setting_enabled == "false") {
-		echo "    <option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "    <option value='false'>".$text['label-false']."</option>\n";
-	}
-	echo "    </select>\n";
 	echo "<br />\n";
 	echo $text['description-enabled']."\n";
 	echo "</td>\n";

@@ -26,12 +26,7 @@
 
 /**
  * conference_profiles class
- *
- * @method null delete
- * @method null toggle
- * @method null copy
  */
-if (!class_exists('conference_profiles')) {
 	class conference_profiles {
 
 		/**
@@ -107,7 +102,6 @@ if (!class_exists('conference_profiles')) {
 									$p->add('conference_profile_param_delete', 'temp');
 
 								//execute delete
-									$database = new database;
 									$database->app_name = $this->app_name;
 									$database->app_uuid = $this->app_uuid;
 									$database->delete($array);
@@ -162,7 +156,6 @@ if (!class_exists('conference_profiles')) {
 						//delete the checked rows
 							if (!empty($array) && is_array($array) && @sizeof($array) != 0) {
 								//execute delete
-									$database = new database;
 									$database->app_name = $this->app_name;
 									$database->app_uuid = $this->app_uuid;
 									$database->delete($array);
@@ -213,7 +206,6 @@ if (!class_exists('conference_profiles')) {
 							if (is_array($uuids) && @sizeof($uuids) != 0) {
 								$sql = "select ".$this->name."_uuid as uuid, ".$this->toggle_field." as toggle from v_".$this->table." ";
 								$sql .= "where ".$this->name."_uuid in (".implode(', ', $uuids).") ";
-								$database = new database;
 								$rows = $database->select($sql, $parameters ?? null, 'all');
 								if (is_array($rows) && @sizeof($rows) != 0) {
 									foreach ($rows as $row) {
@@ -237,7 +229,6 @@ if (!class_exists('conference_profiles')) {
 						//save the changes
 							if (is_array($array) && @sizeof($array) != 0) {
 								//save the array
-									$database = new database;
 									$database->app_name = $this->app_name;
 									$database->app_uuid = $this->app_uuid;
 									$database->save($array);
@@ -285,7 +276,6 @@ if (!class_exists('conference_profiles')) {
 							if (!empty($uuids) && is_array($uuids) && @sizeof($uuids) != 0) {
 								$sql = "select ".$this->name."_uuid as uuid, ".$this->toggle_field." as toggle from v_".$this->table." ";
 								$sql .= "where ".$this->name."_uuid in (".implode(', ', $uuids).") ";
-								$database = new database;
 								$rows = $database->select($sql, $parameters ?? null, 'all');
 								if (is_array($rows) && @sizeof($rows) != 0) {
 									foreach ($rows as $row) {
@@ -311,7 +301,6 @@ if (!class_exists('conference_profiles')) {
 						//save the changes
 							if (!empty($array) && is_array($array) && @sizeof($array) != 0) {
 								//save the array
-									$database = new database;
 									$database->app_name = $this->app_name;
 									$database->app_uuid = $this->app_uuid;
 									$database->save($array);
@@ -366,7 +355,6 @@ if (!class_exists('conference_profiles')) {
 								//primary table
 									$sql = "select * from v_".$this->table." ";
 									$sql .= "where ".$this->name."_uuid in (".implode(', ', $uuids).") ";
-									$database = new database;
 									$rows = $database->select($sql, $parameters ?? null, 'all');
 									if (is_array($rows) && @sizeof($rows) != 0) {
 										$y = 0;
@@ -383,7 +371,6 @@ if (!class_exists('conference_profiles')) {
 											//params sub table
 												$sql_2 = "select * from v_conference_profile_params where conference_profile_uuid = :conference_profile_uuid";
 												$parameters_2['conference_profile_uuid'] = $row['conference_profile_uuid'];
-												$database = new database;
 												$rows_2 = $database->select($sql_2, $parameters_2, 'all');
 												if (is_array($rows_2) && @sizeof($rows_2) != 0) {
 													foreach ($rows_2 as $row_2) {
@@ -414,7 +401,6 @@ if (!class_exists('conference_profiles')) {
 									$p->add('conference_profile_param_add', 'temp');
 
 								//save the array
-									$database = new database;
 									$database->app_name = $this->app_name;
 									$database->app_uuid = $this->app_uuid;
 									$database->save($array);
@@ -432,6 +418,3 @@ if (!class_exists('conference_profiles')) {
 		}
 
 	}
-}
-
-?>

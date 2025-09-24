@@ -211,8 +211,8 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['label-advanced_settings']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'fax_edit.php?id='.$fax_uuid]);
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','link'=>'fax_edit.php?id='.$fax_uuid]);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','style'=>'margin-left: 15px;']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -287,10 +287,21 @@
 		echo "					".$text['label-email_connection_validate']."\n";
 		echo "				</td>\n";
 		echo "				<td class='vtable' align='left'>\n";
-		echo "					<select class='formfld' name='fax_email_connection_validate'>\n";
-		echo "						<option value='true'>".$text['option-true']."</option>\n";
-		echo "						<option value='false' ".(!empty($fax_email_connection_validate) && $fax_email_connection_validate == 'false' ? "selected" : null).">".$text['option-false']."</option>\n";
-		echo "					</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
+	}
+	echo "	<select class='formfld' id='fax_email_connection_validate' name='fax_email_connection_validate'>\n";
+	echo "		<option value='true' ".($fax_email_connection_validate === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($fax_email_connection_validate === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
+	}
+//		echo "					<select class='formfld' name='fax_email_connection_validate'>\n";
+//		echo "						<option value='true'>".$text['option-true']."</option>\n";
+//		echo "						<option value='false' ".(!empty($fax_email_connection_validate) && $fax_email_connection_validate == 'false' ? "selected" : null).">".$text['option-false']."</option>\n";
+//		echo "					</select>\n";
 		echo "				<br />\n";
 		echo "					".$text['description-email_connection_validate']."\n";
 		echo "				</td>\n";
@@ -314,7 +325,7 @@
 		echo "				</td>\n";
 		echo "				<td class='vtable' align='left'>\n";
 		echo "				  <input type='password' style='display: none;' disabled='disabled'>\n"; //help defeat browser auto-fill
-		echo "					<input class='formfld' type='password' name='fax_email_connection_password' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" autocomplete='off' maxlength='50' value=\"".escape($fax_email_connection_password ?? '')."\">\n";
+		echo "					<input class='formfld password' type='password' name='fax_email_connection_password' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" autocomplete='off' maxlength='50' value=\"".escape($fax_email_connection_password ?? '')."\">\n";
 		echo "				<br />\n";
 		echo "					".$text['description-email_connection_password']."\n";
 		echo "				</td>\n";

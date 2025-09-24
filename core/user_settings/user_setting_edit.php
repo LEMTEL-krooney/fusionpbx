@@ -84,7 +84,7 @@
 		$user_setting_name = strtolower($_POST["user_setting_name"] ?? '');
 		$user_setting_value = $_POST["user_setting_value"] ?? '';
 		$user_setting_order = $_POST["user_setting_order"] ?? '';
-		$user_setting_enabled = strtolower($_POST["user_setting_enabled"] ?? 'false');
+		$user_setting_enabled = $_POST["user_setting_enabled"];
 		$user_setting_description = $_POST["user_setting_description"] ?? '';
 	}
 
@@ -298,6 +298,9 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 					}
 				}
 
+			//clear the user settings cache
+				settings::clear_cache('user');
+
 			//redirect the browser
 				if ($action == "update") {
 					message::add($text['message-update']);
@@ -313,7 +316,7 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 //pre-populate the form
 	if (!empty($_GET["id"]) && empty($_POST["persistformvar"])) {
 		$user_setting_uuid = $_GET["id"];
-		$sql = "select user_setting_category, user_setting_subcategory, user_setting_name, user_setting_value, user_setting_order, cast(user_setting_enabled as text), user_setting_description ";
+		$sql = "select user_setting_category, user_setting_subcategory, user_setting_name, user_setting_value, user_setting_order, user_setting_enabled, user_setting_description ";
 		$sql .= "from v_user_settings ";
 		$sql .= "where user_setting_uuid = :user_setting_uuid ";
 		$sql .= "and user_uuid = :user_uuid ";
@@ -358,8 +361,8 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 	}
 	echo	"</div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'style'=>'margin-right: 15px;','link'=>'/core/users/user_edit.php?id='.urlencode($user_uuid)]);
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'style'=>'margin-right: 15px;','link'=>'/core/users/user_edit.php?id='.urlencode($user_uuid)]);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -541,8 +544,8 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 		echo "    	<option value='textarea' ".($user_setting_value == "textarea" ? "selected='selected'" : null).">TextArea</option>\n";
 		echo "	</select>\n";
 	}
-	else if ($user_setting_subcategory == 'password' || substr_count($user_setting_subcategory, '_password') > 0 || $user_setting_category == "login" && $user_setting_subcategory == "password_reset_key" && $user_setting_name == "text") {
-		echo "	<input class='formfld' type='password' id='user_setting_value' name='user_setting_value' maxlength='255' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" value=\"".escape($user_setting_value)."\">\n";
+	else if ($user_setting_subcategory == 'password' || (substr_count($user_setting_subcategory, '_password') > 0 && $user_setting_subcategory != 'input_text_font_password') || $user_setting_category == "login" && $user_setting_subcategory == "password_reset_key" && $user_setting_name == "text") {
+		echo "	<input class='formfld password' type='password' id='user_setting_value' name='user_setting_value' maxlength='255' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" value=\"".escape($user_setting_value)."\">\n";
 	}
 	else if ($user_setting_category == "theme" && substr_count($user_setting_subcategory, "_color") > 0 && ($user_setting_name == "text" || $user_setting_name == 'array')) {
 		echo "	<input type='text' class='formfld colorpicker' id='user_setting_value' name='user_setting_value' value=\"".$user_setting_value."\">\n";
@@ -590,8 +593,8 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 	}
 	else if ($user_setting_category == "theme" && $user_setting_subcategory == "domain_visible" && $user_setting_name == "text" ) {
 		echo "    <select class='formfld' id='user_setting_value' name='user_setting_value'>\n";
-		echo "    	<option value='false' ".(($user_setting_value == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
-		echo "    	<option value='true' ".(($user_setting_value == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
+		echo "    	<option value='false' ".(($user_setting_value == 'false') ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
+		echo "    	<option value='true' ".(($user_setting_value == 'true') ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
 		echo "    </select>\n";
 	}
 	else if ($user_setting_category == "theme" && $user_setting_subcategory == "menu_brand_type" && $user_setting_name == "text" ) {
@@ -657,7 +660,7 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 	}
 	elseif ($user_setting_category == "theme" && $user_setting_subcategory == "input_toggle_style" && $user_setting_name == "text" ) {
 		echo "	<select class='formfld' id='user_setting_value' name='user_setting_value'>\n";
-		echo "    	<option value='select'>".$text['option-select']."</option>\n";
+		echo "    	<option value='select'>".$text['option-select_box']."</option>\n";
 		echo "    	<option value='switch_round' ".(($user_setting_value == "switch_round") ? "selected='selected'" : null).">".$text['option-switch_round']."</option>\n";
 		echo "    	<option value='switch_square' ".(($user_setting_value == "switch_square") ? "selected='selected'" : null).">".$text['option-switch_square']."</option>\n";
 		echo "	</select>\n";
@@ -692,7 +695,7 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 		}
 		else {
 			echo "	<option value='false'>".$text['label-false']."</option>\n";
-			echo "	<option value='true' ".((strtolower($user_setting_value) == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
+			echo "	<option value='true' ".((strtolower($user_setting_value) == 'true') ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
 		}
 		echo "	</select>\n";
 	}
@@ -707,7 +710,7 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 	echo "<br />\n";
 	echo $text['description-value']."\n";
 	if ($user_setting_category == "theme" && substr_count($user_setting_subcategory, "_font") > 0 && $user_setting_name == "text") {
-		echo "&nbsp;&nbsp;".$text['label-reference'].": <a href='https://www.google.com/fonts' target='_blank'>".$text['label-web_fonts']."</a>\n";
+		echo "&nbsp;&nbsp;".$text['label-reference'].": <a href='https://fonts.google.com' target='_blank'>".$text['label-web_fonts']."</a>\n";
 	}
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -749,20 +752,18 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 	echo "    ".$text['label-enabled']."\n";
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' align='left'>\n";
-	if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
-		echo "	<label class='switch'>\n";
-		echo "		<input type='checkbox' id='user_setting_enabled' name='user_setting_enabled' value='true' ".($user_setting_enabled == 'true' ? "checked='checked'" : null).">\n";
-		echo "		<span class='slider'></span>\n";
-		echo "	</label>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "	<select class='formfld' id='user_setting_enabled' name='user_setting_enabled'>\n";
-		echo "		<option value='true' ".($user_setting_enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-		echo "		<option value='false' ".($user_setting_enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-		echo "	</select>\n";
+	echo "	<select class='formfld' id='user_setting_enabled' name='user_setting_enabled'>\n";
+	echo "		<option value='true' ".($user_setting_enabled === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($user_setting_enabled === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
 	echo "<br />\n";
-	//echo $text['description-setting_enabled']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2021-2023
+	Portions created by the Initial Developer are Copyright (C) 2021-2025
 	the Initial Developer. All Rights Reserved.
 */
 
@@ -69,7 +69,7 @@
 		$extension_setting_type = $_POST["extension_setting_type"];
 		$extension_setting_name = $_POST["extension_setting_name"];
 		$extension_setting_value = $_POST["extension_setting_value"];
-		$extension_setting_enabled = $_POST["extension_setting_enabled"] ?? 'false';
+		$extension_setting_enabled = $_POST["extension_setting_enabled"];
 		$extension_setting_description = $_POST["extension_setting_description"];
 	}
 
@@ -123,7 +123,7 @@
 			if (empty($extension_setting_type)) { $msg .= $text['message-required']." ".$text['label-extension_setting_type']."<br>\n"; }
 			if (empty($extension_setting_name)) { $msg .= $text['message-required']." ".$text['label-extension_setting_name']."<br>\n"; }
 			//if (empty($extension_setting_value)) { $msg .= $text['message-required']." ".$text['label-extension_setting_value']."<br>\n"; }
-			if (empty($extension_setting_enabled)) { $msg .= $text['message-required']." ".$text['label-extension_setting_enabled']."<br>\n"; }
+			// if (empty($extension_setting_enabled)) { $msg .= $text['message-required']." ".$text['label-extension_setting_enabled']."<br>\n"; }
 			//if (empty($extension_setting_description)) { $msg .= $text['message-required']." ".$text['label-extension_setting_description']."<br>\n"; }
 			if (!empty($msg) && empty($_POST["persistformvar"])) {
 				require_once "resources/header.php";
@@ -193,7 +193,7 @@
 		$sql .= "extension_setting_type, ";
 		$sql .= "extension_setting_name, ";
 		$sql .= "extension_setting_value, ";
-		$sql .= "cast(extension_setting_enabled as text), ";
+		$sql .= "extension_setting_enabled, ";
 		$sql .= "extension_setting_description ";
 		$sql .= "from v_extension_settings ";
 		$sql .= "where extension_setting_uuid = :extension_setting_uuid ";
@@ -216,9 +216,6 @@
 		unset($sql, $parameters, $row);
 	}
 
-//set the defaults
-	if (empty($extension_setting_enabled)) { $extension_setting_enabled = 'true'; }
-
 //create token
 	$object = new token;
 	$token = $object->create($_SERVER['PHP_SELF']);
@@ -234,16 +231,16 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-extension_setting']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','collapse'=>'hide-xs','style'=>'margin-right: 15px;','link'=>'extension_settings.php?id='.$extension_uuid]);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','collapse'=>'hide-xs','style'=>'margin-right: 15px;','link'=>'extension_settings.php?id='.$extension_uuid]);
 	if ($action == 'update') {
 		if (permission_exists('_add')) {
-			echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'id'=>'btn_copy','name'=>'btn_copy','style'=>'display: none;','onclick'=>"modal_open('modal-copy','btn_copy');"]);
+			echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$settings->get('theme', 'button_icon_copy'),'id'=>'btn_copy','name'=>'btn_copy','style'=>'display: none;','onclick'=>"modal_open('modal-copy','btn_copy');"]);
 		}
 		if (permission_exists('_delete')) {
-			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','name'=>'btn_delete','style'=>'display: none; margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
+			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$settings->get('theme', 'button_icon_delete'),'id'=>'btn_delete','name'=>'btn_delete','style'=>'display: none; margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 		}
 	}
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','collapse'=>'hide-xs']);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','collapse'=>'hide-xs']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -341,17 +338,16 @@
 	echo "	".$text['label-extension_setting_enabled']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
-		echo "	<label class='switch'>\n";
-		echo "		<input type='checkbox' id='extension_setting_enabled' name='extension_setting_enabled' value='true' ".($extension_setting_enabled == 'true' ? "checked='checked'" : null).">\n";
-		echo "		<span class='slider'></span>\n";
-		echo "	</label>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "	<select class='formfld' id='extension_setting_enabled' name='extension_setting_enabled'>\n";
-		echo "		<option value='true' ".($extension_setting_enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-		echo "		<option value='false' ".($extension_setting_enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-		echo "	</select>\n";
+	echo "	<select class='formfld' id='extension_setting_enabled' name='extension_setting_enabled'>\n";
+	echo "		<option value='true' ".($extension_setting_enabled === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($extension_setting_enabled === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
 	echo "<br />\n";
 	echo $text['description-extension_setting_enabled']."\n";

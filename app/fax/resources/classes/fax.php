@@ -25,7 +25,6 @@
 */
 
 //define the fax class
-if (!class_exists('fax')) {
 	class fax {
 
 		/**
@@ -74,6 +73,16 @@ if (!class_exists('fax')) {
 		* @var string $value	string to be cached
 		*/
 		public function dialplan() {
+
+			//require the fax_extension
+				if (empty($this->fax_extension)) {
+					return false;
+				}
+
+			//require the destination_number
+				if (empty($this->destination_number)) {
+					return false;
+				}
 
 			//normalize the fax forward number
 				if (strlen($this->fax_forward_number) > 3) {
@@ -155,10 +164,10 @@ if (!class_exists('fax')) {
 				$dialplan["dialplan_name"] = ($this->fax_name != '') ? $this->fax_name : format_phone($this->destination_number);
 				$dialplan["dialplan_number"] = $this->fax_extension;
 				$dialplan["dialplan_context"] = $_SESSION['domain_name'];
-				$dialplan["dialplan_continue"] = "false";
+				$dialplan["dialplan_continue"] = false;
 				$dialplan["dialplan_xml"] = $dialplan_xml;
 				$dialplan["dialplan_order"] = "40";
-				$dialplan["dialplan_enabled"] = "true";
+				$dialplan["dialplan_enabled"] = true;
 				$dialplan["dialplan_description"] = $this->fax_description;
 				$dialplan_detail_order = 10;
 
@@ -708,7 +717,7 @@ if (!class_exists('fax')) {
 									$database = new database;
 									$database->app_name = $this->app_name;
 									$database->app_uuid = $this->app_uuid;
-									$database->save($array);
+									$database->save($array, false);
 									unset($array);
 
 								//return toggled count
@@ -725,7 +734,6 @@ if (!class_exists('fax')) {
 		}
 
 	} //class
-}
 
 /*
 $o = new fax;
@@ -738,5 +746,3 @@ $c->destination_number = $fax_destination_number;
 $c->fax_description = $fax_description;
 $c->dialplan();
 */
-
-?>

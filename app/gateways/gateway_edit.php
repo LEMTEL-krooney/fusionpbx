@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2023
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -106,7 +106,7 @@
 		$context = $_POST["context"];
 		$profile = $_POST["profile"];
 		$hostname = $_POST["hostname"];
-		$enabled = $_POST["enabled"] ?? 'false';
+		$enabled = $_POST["enabled"];
 		$description = $_POST["description"];
 	}
 
@@ -129,7 +129,7 @@
 		//check for all required data
 			$msg = '';
 			if (empty($gateway)) { $msg .= $text['message-required']." ".$text['label-gateway']."<br>\n"; }
-			if ($register == "true") {
+			if ($register == 'true') {
 				if (empty($username)) { $msg .= $text['message-required']." ".$text['label-username']."<br>\n"; }
 				if (empty($password)) { $msg .= $text['message-required']." ".$text['label-password']."<br>\n"; }
 			}
@@ -198,7 +198,7 @@
 					$array['gateways'][$x]["description"] = $description;
 
 				//update gateway session variable
-					if ($enabled == 'true') {
+					if ($enabled) {
 						$_SESSION['gateways'][$gateway_uuid] = $gateway;
 					}
 					else {
@@ -216,7 +216,7 @@
 					$message = $database->message;
 
 				//remove xml file (if any) if not enabled
-					if ($enabled != 'true' && !empty($_SESSION['switch']['sip_profiles']['dir'])) {
+					if ($enabled != true && !empty($_SESSION['switch']['sip_profiles']['dir'])) {
 						$gateway_xml_file = $_SESSION['switch']['sip_profiles']['dir']."/".$profile."/v_".$gateway_uuid.".xml";
 						if (file_exists($gateway_xml_file)) {
 							unlink($gateway_xml_file);
@@ -285,10 +285,10 @@
 			$ping = $row["ping"];
 			$ping_min = $row["ping_min"];
 			$ping_max = $row["ping_max"];
-			$contact_in_ping = $row["contact_in_ping"];
+			$contact_in_ping = $row["contact_in_ping"] ?? false;
 			$channels = $row["channels"];
-			$caller_id_in_from = $row["caller_id_in_from"];
-			$supress_cng = $row["supress_cng"];
+			$caller_id_in_from = $row["caller_id_in_from"] ?? false;
+			$supress_cng = $row["supress_cng"] ?? false;
 			$sip_cid_type = $row["sip_cid_type"];
 			$codec_prefs = $row["codec_prefs"];
 			$extension_in_contact = $row["extension_in_contact"];
@@ -303,7 +303,7 @@
 
 //get the sip profiles
 	$sql = "select sip_profile_name from v_sip_profiles ";
-	$sql .= "where sip_profile_enabled = 'true' ";
+	$sql .= "where sip_profile_enabled = true ";
 	$sql .= "order by sip_profile_name asc ";
 	$database = new database;
 	$sip_profiles = $database->select($sql, null, 'all');
@@ -311,13 +311,10 @@
 
 //set defaults
 	if (empty($gateway_uuid)) { $gateway_uuid = ""; }
-	if (empty($enabled)) { $enabled = "true"; }
-	if (empty($register)) { $register = "true"; }
 	if (empty($retry_seconds)) { $retry_seconds = "30"; }
 	if (empty($gateway)) { $gateway = ''; }
 	if (empty($username)) { $username = ''; }
 	if (empty($password)) { $password = ''; }
-	if (empty($distinct_to)) { $distinct_to = ''; }
 	if (empty($auth_username)) { $auth_username = ''; }
 	if (empty($realm)) { $realm = ''; }
 	if (empty($from_user)) { $from_user = ''; }
@@ -326,7 +323,6 @@
 	if (empty($register_proxy)) { $register_proxy = ''; }
 	if (empty($outbound_proxy)) { $outbound_proxy = ''; }
 	if (empty($expire_seconds)) { $expire_seconds = ''; }
-	if (empty($register)) { $register = ''; }
 	if (empty($register_transport)) { $register_transport = ''; }
 	if (empty($contact_params)) { $contact_params = ''; }
 	if (empty($retry_seconds)) { $retry_seconds = ''; }
@@ -334,17 +330,13 @@
 	if (empty($ping)) { $ping = ''; }
 	if (empty($ping_min)) { $ping_min = ''; }
 	if (empty($ping_max)) { $ping_max = ''; }
-	if (empty($contact_in_ping)) { $contact_in_ping = ''; }
 	if (empty($channels)) { $channels = ''; }
-	if (empty($caller_id_in_from)) { $caller_id_in_from = ''; }
-	if (empty($supress_cng)) { $supress_cng = ''; }
 	if (empty($sip_cid_type)) { $sip_cid_type = ''; }
 	if (empty($codec_prefs)) { $codec_prefs = ''; }
 	if (empty($extension_in_contact)) { $extension_in_contact = ''; }
 	if (empty($context)) { $context = ''; }
 	if (empty($profile)) { $profile = ''; }
 	if (empty($hostname)) { $hostname = ''; }
-	if (empty($enabled)) { $enabled = 'true'; }
 	if (empty($description)) { $description = ''; }
 
 //create token
@@ -374,11 +366,11 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-gateway']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'gateways.php']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','link'=>'gateways.php']);
 	if ($action == "update" && permission_exists('gateway_add')) {
-		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'name'=>'btn_copy','style'=>'margin-left: 15px;','onclick'=>"modal_open('modal-copy','btn_copy');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$settings->get('theme', 'button_icon_copy'),'name'=>'btn_copy','style'=>'margin-left: 15px;','onclick'=>"modal_open('modal-copy','btn_copy');"]);
 	}
-	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;','onclick'=>'submit_form();']);
+	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','style'=>'margin-left: 15px;','onclick'=>'submit_form();']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -423,7 +415,7 @@
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	echo "    <input type='password' style='display: none;' disabled='disabled'>\n"; //help defeat browser auto-fill
-	echo "    <input class='formfld' type='password' name='password' id='password' autocomplete='new-password' maxlength='255' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" value=\"".escape($password)."\">\n";
+	echo "    <input class='formfld password' type='password' name='password' id='password' autocomplete='new-password' maxlength='255' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" value=\"".escape($password)."\">\n";
 	echo "    <br />\n";
 	echo "    ".$text['description-password']."\n";
 	echo "</td>\n";
@@ -490,20 +482,17 @@
 	echo "    ".$text['label-register']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "    <select class='formfld' name='register'>\n";
-	if ($register == "true") {
-		echo "    <option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "    <option value='true'>".$text['label-true']."</option>\n";
+	echo "	<select class='formfld' id='register' name='register'>\n";
+	echo "		<option value='true' ".($register === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($register === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
-	if ($register == "false") {
-		echo "    <option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "    <option value='false'>".$text['label-false']."</option>\n";
-	}
-	echo "    </select>\n";
 	echo "<br />\n";
 	echo $text['description-register']."\n";
 	echo "</td>\n";
@@ -543,21 +532,17 @@
 	echo "    ".$text['label-distinct_to']."\n";
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' align='left'>\n";
-	echo "    <select class='formfld' name='distinct_to'>\n";
-	echo "    <option value=''></option>\n";
-	if ($distinct_to == "true") {
-		echo "    <option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "    <option value='true'>".$text['label-true']."</option>\n";
+	echo "	<select class='formfld' id='distinct_to' name='distinct_to'>\n";
+	echo "		<option value='true' ".($distinct_to === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($distinct_to === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
-	if ($distinct_to == "false") {
-		echo "    <option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "    <option value='false'>".$text['label-false']."</option>\n";
-	}
-	echo "    </select>\n";
 	echo "<br />\n";
 	echo $text['description-distinct_to']."\n";
 	echo "</td>\n";
@@ -654,21 +639,17 @@
 	echo "		".$text['label-caller_id_in_from']."\n";
 	echo "	</td>\n";
 	echo "	<td class='vtable' align='left'>\n";
-	echo "		<select class='formfld' name='caller_id_in_from'>\n";
-	echo "		<option value=''></option>\n";
-	if ($caller_id_in_from == "true") {
-		echo "		<option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "		<option value='true'>".$text['label-true']."</option>\n";
-	}
-	if ($caller_id_in_from == "false") {
-		echo "		<option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "		<option value='false'>".$text['label-false']."</option>\n";
-	}
+	echo "	<select class='formfld' id='caller_id_in_from' name='caller_id_in_from'>\n";
+	echo "		<option value='true' ".($caller_id_in_from === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($caller_id_in_from === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
 	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
+	}
 	echo "<br />\n";
 	echo $text['description-caller_id_in_from']."\n";
 	echo "</td>\n";
@@ -679,21 +660,17 @@
 	echo "    ".$text['label-supress_cng']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "    <select class='formfld' name='supress_cng'>\n";
-	echo "    <option value=''></option>\n";
-	if ($supress_cng == "true") {
-		echo "    <option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "    <option value='true'>".$text['label-true']."</option>\n";
+	echo "	<select class='formfld' id='supress_cng' name='supress_cng'>\n";
+	echo "		<option value='true' ".($supress_cng === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($supress_cng === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
-	if ($supress_cng == "false") {
-		echo "    <option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "    <option value='false'>".$text['label-false']."</option>\n";
-	}
-	echo "    </select>\n";
 	echo "<br />\n";
 	echo $text['description-supress_cng']."\n";
 	echo "</td>\n";
@@ -784,21 +761,17 @@
 	echo "    ".$text['label-contact_in_ping']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "    <select class='formfld' name='contact_in_ping'>\n";
-	echo "    <option value=''></option>\n";
-	if ($contact_in_ping == "true") {
-		echo "    <option value='true' selected='selected'>".$text['label-true']."</option>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "    <option value='true'>".$text['label-true']."</option>\n";
+	echo "	<select class='formfld' id='contact_in_ping' name='contact_in_ping'>\n";
+	echo "		<option value='true' ".($contact_in_ping === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($contact_in_ping === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
-	if ($contact_in_ping == "false") {
-		echo "    <option value='false' selected='selected'>".$text['label-false']."</option>\n";
-	}
-	else {
-		echo "    <option value='false'>".$text['label-false']."</option>\n";
-	}
-	echo "    </select>\n";
 	echo "<br />\n";
 	echo $text['description-contact_in_ping']."\n";
 	echo "</td>\n";
@@ -901,17 +874,16 @@
 	echo "	".$text['label-enabled']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
-		echo "	<label class='switch'>\n";
-		echo "		<input type='checkbox' id='enabled' name='enabled' value='true' ".($enabled == 'true' ? "checked='checked'" : null).">\n";
-		echo "		<span class='slider'></span>\n";
-		echo "	</label>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "	<select class='formfld' id='enabled' name='enabled'>\n";
-		echo "		<option value='true' ".($enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-		echo "		<option value='false' ".($enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-		echo "	</select>\n";
+	echo "	<select class='formfld' id='enabled' name='enabled'>\n";
+	echo "		<option value='true' ".($enabled === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($enabled === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
 	echo "<br />\n";
 	echo $text['description-enabled']."\n";

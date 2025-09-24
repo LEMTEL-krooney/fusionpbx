@@ -72,9 +72,8 @@
 
 		$dialplan_context = $_POST["dialplan_context"];
 		$dialplan_order = $_POST["dialplan_order"];
-		$dialplan_enabled = $_POST["dialplan_enabled"];
+		$dialplan_enabled = $_POST["dialplan_enabled"] ?? false;
 		$dialplan_description = $_POST["dialplan_description"];
-		if (empty($dialplan_enabled)) { $dialplan_enabled = "true"; } //set default to enabled
 	}
 
 //set the default
@@ -123,7 +122,7 @@
 			$array['dialplans'][0]['app_uuid'] = '742714e5-8cdf-32fd-462c-cbe7e3d655db';
 			$array['dialplans'][0]['dialplan_name'] = $dialplan_name;
 			$array['dialplans'][0]['dialplan_order'] = $dialplan_order;
-			$array['dialplans'][0]['dialplan_continue'] = 'false';
+			$array['dialplans'][0]['dialplan_continue'] = false;
 			$array['dialplans'][0]['dialplan_context'] = $dialplan_context;
 			$array['dialplans'][0]['dialplan_enabled'] = $dialplan_enabled;
 			$array['dialplans'][0]['dialplan_description'] = $dialplan_description;
@@ -239,9 +238,9 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['header-dialplan-add']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'dialplans.php']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','link'=>'dialplans.php']);
 	echo button::create(['type'=>'button','label'=>$text['button-advanced'],'icon'=>'tools','style'=>'margin-left: 15px;','link'=>'dialplan_edit.php']);
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;']);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','style'=>'margin-left: 15px;']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -270,13 +269,13 @@
 	//echo "<td class='vtable' align='left'>\n";
 	//echo "    <select class='formfld' name='dialplan_continue' style='width: 60%;'>\n";
 	//echo "    <option value=''></option>\n";
-	//if ($dialplan_continue == "true") {
+	//if ($dialplan_continue == true) {
 	//	echo "    <option value='true' selected='selected'>true</option>\n";
 	//}
 	//else {
 	//	echo "    <option value='true'>true</option>\n";
 	//}
-	//if ($dialplan_continue == "false") {
+	//if ($dialplan_continue == false) {
 	//	echo "    <option value='false' selected='selected'>false</option>\n";
 	//}
 	//else {
@@ -521,10 +520,17 @@
 	echo "		".$text['label-enabled']."\n";
 	echo "	</td>\n";
 	echo "	<td class='vtable' align='left'>\n";
-	echo "		<select class='formfld' name='dialplan_enabled'>\n";
-	echo "			<option value='true'>".$text['option-true']."</option>\n";
-	echo "			<option value='false' ".(!empty($dialplan_enabled) && $dialplan_enabled == "false" ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-	echo "		</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
+	}
+	echo "	<select class='formfld' id='dialplan_enabled' name='dialplan_enabled'>\n";
+	echo "		<option value='true' ".($dialplan_enabled === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".($dialplan_enabled === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
+	}
 	echo "		<br />\n";
 	echo "	</td>\n";
 	echo "</tr>\n";

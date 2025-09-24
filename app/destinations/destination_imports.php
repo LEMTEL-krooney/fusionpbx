@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2018-2024
+	Portions created by the Initial Developer are Copyright (C) 2018-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -267,7 +267,7 @@
 										$array["dialplans"][$row_id]["dialplan_name"] = !empty($dialplan_name) ? $dialplan_name : format_phone($destination_number);
 										$array["dialplans"][$row_id]["dialplan_number"] = $destination_number;
 										$array["dialplans"][$row_id]["dialplan_context"] = $destination_context;
-										$array["dialplans"][$row_id]["dialplan_continue"] = "false";
+										$array["dialplans"][$row_id]["dialplan_continue"] = false;
 										$array["dialplans"][$row_id]["dialplan_order"] = "100";
 										$array["dialplans"][$row_id]["dialplan_enabled"] = $destination_enabled;
 										$array["dialplans"][$row_id]["dialplan_description"] = $destination_description;
@@ -334,7 +334,7 @@
 										$array["dialplans"][$row_id]["dialplan_xml"] .= "</extension>\n";
 
 									//dialplan details
-										if ($_SESSION['destinations']['dialplan_details']['boolean'] == "true") {
+										if ($settings->get('destinations', 'dialplan_details', false)) {
 
 											//check the destination number
 												$array["dialplans"][$row_id]["dialplan_details"][$y]["domain_uuid"] = $domain_uuid;
@@ -366,7 +366,7 @@
 												}
 
 											//enable call recordings
-												if ($destination_record == "true") {
+												if ($destination_record === true) {
 
 													$array["dialplans"][$row_id]["dialplan_details"][$y]["domain_uuid"] = $domain_uuid;
 													$array["dialplans"][$row_id]["dialplan_details"][$y]["dialplan_detail_tag"] = "action";
@@ -729,8 +729,8 @@
 			echo "<div class='action_bar' id='action_bar'>\n";
 			echo "	<div class='heading'><b>".$text['header-destination_import']."</b></div>\n";
 			echo "	<div class='actions'>\n";
-			echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'destination_imports.php']);
-			echo button::create(['type'=>'submit','label'=>$text['button-import'],'icon'=>$_SESSION['theme']['button_icon_import'],'id'=>'btn_save']);
+			echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'destination_imports.php']);
+			echo button::create(['type'=>'submit','label'=>$text['button-import'],'icon'=>$settings->get('theme', 'button_icon_import'),'id'=>'btn_save']);
 			echo "	</div>\n";
 			echo "	<div style='clear: both;'></div>\n";
 			echo "</div>\n";
@@ -810,16 +810,17 @@
 			echo "	".$text['label-destination_record']."\n";
 			echo "</td>\n";
 			echo "<td class='vtable' align='left'>\n";
-			echo "	<select class='formfld' name='destination_record' id='destination_record'>\n";
-			echo "	<option value=''></option>\n";
-			switch ($destination_record) {
-				case "true" : 	$selected[1] = "selected='selected'";	break;
-				case "false" : 	$selected[2] = "selected='selected'";	break;
+			if ($input_toggle_style_switch) {
+				echo "	<span class='switch'>\n";
 			}
-			echo "	<option value='true' ".($selected[1] ?? null).">".$text['option-true']."</option>\n";
-			echo "	<option value='false' ".($selected[2] ?? null).">".$text['option-false']."</option>\n";
-			unset($selected);
-			echo "	</select>\n";
+			echo "		<select class='formfld' id='destination_record' name='destination_record'>\n";
+			echo "			<option value='false' ".($destination_record === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+			echo "			<option value='true' ".($destination_record === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+			echo "		</select>\n";
+			if ($input_toggle_style_switch) {
+				echo "		<span class='slider'></span>\n";
+				echo "	</span>\n";
+			}
 			echo "<br />\n";
 			echo ($text['description-destination_record'] ?? null)."\n";
 			echo "</td>\n";
@@ -888,17 +889,17 @@
 			echo "	".$text['label-destination_enabled']."\n";
 			echo "</td>\n";
 			echo "<td class='vtable' align='left'>\n";
-			echo "	<select class='formfld' name='destination_enabled'>\n";
-			if (!empty($destination_enabled)) {
-				switch ($destination_enabled) {
-					case "true": $selected[1] = "selected='selected'"; break;
-					case "false": $selected[2] = "selected='selected'"; break;
-				}
+			if ($input_toggle_style_switch) {
+				echo "	<span class='switch'>\n";
 			}
-			echo "	<option value='true' ".($selected[1] ?? null).">".$text['label-true']."</option>\n";
-			echo "	<option value='false' ".($selected[2] ?? null).">".$text['label-false']."</option>\n";
-			unset($selected);
-			echo "	</select>\n";
+			echo "		<select class='formfld' id='destination_enabled' name='destination_enabled'>\n";
+			echo "			<option value='true' ".($destination_enabled === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+			echo "			<option value='false' ".($destination_enabled === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+			echo "		</select>\n";
+			if ($input_toggle_style_switch) {
+				echo "		<span class='slider'></span>\n";
+				echo "	</span>\n";
+			}
 			echo "<br />\n";
 			echo ($text['description-destination_enabled'] ?? null)."\n";
 			echo "</td>\n";
@@ -944,8 +945,8 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['header-destination_import']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'destinations.php']);
-	echo button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>$_SESSION['theme']['button_icon_upload'],'id'=>'btn_save']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'destinations.php']);
+	echo button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>$settings->get('theme', 'button_icon_upload'),'id'=>'btn_save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";

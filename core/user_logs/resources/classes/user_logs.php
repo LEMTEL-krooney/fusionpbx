@@ -26,12 +26,7 @@
 
 /**
  * user_logs class
- *
- * @method null delete
- * @method null toggle
- * @method null copy
  */
-if (!class_exists('user_logs')) {
 	class user_logs {
 
 		/**
@@ -62,7 +57,7 @@ if (!class_exists('user_logs')) {
 		/**
 		 * add user_logs
 		 */
-		public static function add($result) {
+		public static function add($result, $details = '') {
 
 			//prepare the array
 				$array = [];
@@ -81,6 +76,7 @@ if (!class_exists('user_logs')) {
 				}
 				else {
 					$array['user_logs'][0]["result"] = 'failure';
+					$array['user_logs'][0]["detail"] = $details;
 				}
 
 			//add the dialplan permission
@@ -151,6 +147,3 @@ if (!class_exists('user_logs')) {
 		}
 
 	}
-}
-
-?>

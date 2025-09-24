@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -269,8 +269,8 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['header-contact_relation']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'contact_edit.php?id='.urlencode($contact_uuid)]);
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'contact_edit.php?id='.urlencode($contact_uuid)]);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -321,7 +321,7 @@
 	echo "<td class='vtable' align='left'>\n";
 	echo "	<input class=\"formfld\" type=\"text\" name=\"contact_search\" placeholder=\"search\" style=\"width: 80px;\" onkeyup=\"get_contacts('contact_select', 'contact_uuid', this.value);\" maxlength=\"255\" value=\"\">\n";
 	echo "	<select class='formfld' style=\"width: 150px;\" id=\"contact_select\" name=\"relation_contact_uuid\" >\n";
-	echo "		<option value='".escape($relation_contact_uuid ?? '')."'>".escape($contact_name ?? '')."</option>\n";
+	echo "		<option value='".escape($relation_contact_uuid ?? '')."'>".escape($relation_contact_uuid ?? '')."</option>\n";
 	echo "	</select>\n";
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -332,10 +332,17 @@
 		echo "	".$text['label-contact_relation_reciprocal']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<select class='formfld' name='relation_reciprocal' id='relation_reciprocal' onchange=\"$('#reciprocal_label').slideToggle(400);\">\n";
-		echo "		<option value='0'>".$text['option-false']."</option>\n";
-		echo "		<option value='1'>".$text['option-true']."</option>\n";
-		echo "	</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "	<span class='switch'>\n";
+		}
+		echo "		<select class='formfld' id='relation_reciprocal' name='relation_reciprocal' onchange=\"$('#reciprocal_label').slideToggle(400);\">\n";
+		echo "			<option value='false'>".$text['option-false']."</option>\n";
+		echo "			<option value='true'>".$text['option-true']."</option>\n";
+		echo "		</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='slider'></span>\n";
+			echo "	</span>\n";
+		}
 		echo "<br />\n";
 		echo $text['description-contact_relation_reciprocal']."\n";
 		echo "</td>\n";

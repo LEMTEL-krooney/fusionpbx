@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Copyright (C) 2008-2024
+	Copyright (C) 2008-2025
 	All Rights Reserved.
 
 	Contributor(s):
@@ -72,16 +72,34 @@
 	$sql .= "where domain_uuid = :domain_uuid ";
 	$sql .= "order by extension asc, number_alias asc ";
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-	$database = new database;
 	$extensions = $database->select($sql, $parameters, 'all');
 
-//get the list of call center queues
-	if (permission_exists('xml_cdr_call_center_queue')) {
+//get the ring groups
+	if (permission_exists('xml_cdr_search_ring_groups')) {
+		$sql = "select ring_group_uuid, ring_group_name, ring_group_extension from v_ring_groups ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "and ring_group_enabled = true ";
+		$sql .= "order by ring_group_extension asc ";
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$ring_groups = $database->select($sql, $parameters, 'all');
+	}
+
+//get the ivr menus
+	if (permission_exists('xml_cdr_search_ivr_menus')) {
+		$sql = "select ivr_menu_uuid, ivr_menu_name, ivr_menu_extension from v_ivr_menus ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "and ivr_menu_enabled = true ";
+		$sql .= "order by ivr_menu_extension asc ";
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$ivr_menus = $database->select($sql, $parameters, 'all');
+	}
+
+//get the call center queues
+	if (permission_exists('xml_cdr_search_call_center_queues')) {
 		$sql = "select call_center_queue_uuid, queue_name, queue_extension from v_call_center_queues ";
 		$sql .= "where domain_uuid = :domain_uuid ";
 		$sql .= "order by queue_extension asc ";
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-		$database = new database;
 		$call_center_queues = $database->select($sql, $parameters, 'all');
 	}
 
@@ -113,8 +131,8 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-advanced_search']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'xml_cdr.php']);
-	echo button::create(['type'=>'submit','label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'id'=>'btn_save']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'xml_cdr.php']);
+	echo button::create(['type'=>'submit','label'=>$text['button-search'],'icon'=>$settings->get('theme', 'button_icon_search'),'id'=>'btn_save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -236,20 +254,25 @@
 			echo "	<tr>";
 			echo "		<td class='vncell'>".$text['button-show_all']."</td>";
 			echo "		<td class='vtable'>\n";
-			if (permission_exists('xml_cdr_all') && isset($_REQUEST['show']) && $_REQUEST['show'] == "all") {
-				echo "			<input type='checkbox' class='formfld' name='showall' checked='checked' value='true'>";
+			if ($input_toggle_style_switch) {
+				echo "	<span class='switch'>\n";
 			}
-			else {
-				echo "			<input type='checkbox' class='formfld' name='showall' value='true'>";
+			echo "		<select class='formfld' id='showall' name='showall'>\n";
+			echo "			<option value='false'>".$text['option-false']."</option>\n";
+			echo "			<option value='true' ".(isset($_REQUEST['show']) && $_REQUEST['show'] == "all" ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+			echo "		</select>\n";
+			if ($input_toggle_style_switch) {
+				echo "		<span class='slider'></span>\n";
+				echo "	</span>\n";
 			}
 			echo "		<td>";
 			echo "	</tr>";
 		}
 		echo "</table>";
-	
+
 	echo "		</td>";
 	echo "		<td width='50%' style='vertical-align: top;'>\n";
-	
+
 		echo "<table width='100%' cellpadding='0' cellspacing='0'>\n";
 		echo "	<tr>";
 		echo "		<td width='30%' class='vncell'>".$text['label-billsec']."</td>";
@@ -356,13 +379,13 @@
 		}
 
 		echo "</table>\n";
-	
+
 	echo "		</td>";
 	echo "	</tr>";
 	echo "</table>";
 	echo "</div>\n";
 	echo "<br><br>";
-	
+
 	echo "</form>";
 
 //include footer

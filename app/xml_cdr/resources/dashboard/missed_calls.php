@@ -90,10 +90,10 @@
 //missed calls
 	echo "<div class='hud_box'>\n";
 
-	echo "<div class='hud_content' ".($dashboard_details_state == "disabled" ?: "onclick=\"$('#hud_missed_calls_details').slideToggle('fast'); toggle_grid_row_end('".$dashboard_name."')\"").">\n";
+	echo "<div class='hud_content' ".($widget_details_state == "disabled" ?: "onclick=\"$('#hud_missed_calls_details').slideToggle('fast');\"").">\n";
 	echo "	<span class='hud_title'><a onclick=\"document.location.href='".PROJECT_PATH."/app/xml_cdr/xml_cdr.php?call_result=missed'\">".$text['label-missed_calls']."</a></span>";
 
-	if ($dashboard_chart_type == "doughnut") {
+	if ($widget_chart_type == "doughnut") {
 		//add doughnut chart
 		?>
 		<div class='hud_chart'><canvas id='missed_calls_chart'></canvas></div>
@@ -128,7 +128,7 @@
 							ctx.font = chart_text_size + ' ' + chart_text_font;
 							ctx.textBaseline = 'middle';
 							ctx.textAlign = 'center';
-							ctx.fillStyle = '<?php echo $dashboard_number_text_color; ?>';
+							ctx.fillStyle = '<?php echo $widget_number_text_color; ?>';
 							ctx.fillText(options.text, width / 2, top + (height / 2));
 							ctx.save();
 						}
@@ -140,22 +140,20 @@
 	}
 
 	//dashboard number
-	if (!isset($dashboard_chart_type) || $dashboard_chart_type == "number") {
+	if (!isset($widget_chart_type) || $widget_chart_type == "number") {
 		echo "<span class='hud_stat'>".$num_rows."</span>";
 	}
 
 	//dashboard icon
-	if (!isset($dashboard_chart_type) || $dashboard_chart_type == "icon") {
-		echo "<span class='hud_content'>\n";
-		echo "<div style='position: relative; display: inline-block;'>\n";
-		echo "		<span class='hud_stat'><i class=\"fas ".$dashboard_icon." \"></i></span>\n";
-		echo "		<span style=\"background-color: ".(!empty($dashboard_number_background_color) ? $dashboard_number_background_color : '#EA4C46')."; color: ".(!empty($dashboard_number_text_color) ? $dashboard_number_text_color : '#ffffff')."; font-size: 12px; font-weight: bold; text-align: center; position: absolute; top: 23px; left: 24.5px; padding: 2px 7px 1px 7px; border-radius: 10px; white-space: nowrap;\">".$num_rows."</span>\n";
+	if (!isset($widget_chart_type) || $widget_chart_type == "icon") {
+		echo "	<div style='position: relative; display: inline-block;'>\n";
+		echo "		<span class='hud_stat'><i class=\"fas ".$widget_icon." \"></i></span>\n";
+		echo "		<span style=\"background-color: ".(!empty($widget_number_background_color) ? $widget_number_background_color : '#EA4C46')."; color: ".(!empty($widget_number_text_color) ? $widget_number_text_color : '#ffffff')."; font-size: 12px; font-weight: bold; text-align: center; position: absolute; top: 23px; left: 24.5px; padding: 2px 7px 1px 7px; border-radius: 10px; white-space: nowrap;\">".$num_rows."</span>\n";
 		echo "	</div>\n";
-		echo "</span>";
 	}
 	echo "</div>\n";
 
-	if ($dashboard_details_state != 'disabled') {
+	if ($widget_details_state != 'disabled') {
 		echo "<div class='hud_details hud_box' id='hud_missed_calls_details'>";
 		echo "<table class='tr_hover' width='100%' cellpadding='0' cellspacing='0' border='0'>\n";
 		echo "<tr>\n";
@@ -188,9 +186,9 @@
 						"&dest_cid_number=".urlencode($_SESSION['user']['extension'][0]['outbound_caller_id_number'] ?? '').
 						"&src=".urlencode($_SESSION['user']['extension'][0]['user'] ?? '').
 						"&dest=".urlencode($row['caller_id_number'] ?? '').
-						"&rec=".(isset($_SESSION['click_to_call']['record']['boolean']) ? $_SESSION['click_to_call']['record']['boolean'] : "false").
+						"&rec=".(filter_var($_SESSION['click_to_call']['record']['boolean'] ?? false, FILTER_VALIDATE_BOOL) ? "true" : "false").
 						"&ringback=".(isset($_SESSION['click_to_call']['ringback']['text']) ? $_SESSION['click_to_call']['ringback']['text'] : "us-ring").
-						"&auto_answer=".(isset($_SESSION['click_to_call']['auto_answer']['boolean']) ? $_SESSION['click_to_call']['auto_answer']['boolean'] : "true").
+						"&auto_answer=".(filter_var($_SESSION['click_to_call']['auto_answer']['boolean'] ?? false, FILTER_VALIDATE_BOOL) ? "true" : "false").
 						"');\" ".
 						"style='cursor: pointer;'";
 				}
@@ -216,7 +214,7 @@
 		echo "</div>";
 		//$n++;
 
-		echo "<span class='hud_expander' onclick=\"$('#hud_missed_calls_details').slideToggle('fast'); toggle_grid_row_end('".$dashboard_name."')\"><span class='fas fa-ellipsis-h'></span></span>";
+		echo "<span class='hud_expander' onclick=\"$('#hud_missed_calls_details').slideToggle('fast');\"><span class='fas fa-ellipsis-h'></span></span>";
 	}
 	echo "</div>\n";
 

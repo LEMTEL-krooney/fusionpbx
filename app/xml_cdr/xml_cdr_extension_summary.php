@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -117,11 +117,11 @@
 	echo "	<div class='heading'><b>".$text['title-extension_summary']."</b></div>\n";
 	echo "	<div class='actions'>\n";
 	if (permission_exists('xml_cdr_extension_summary_all') && $_GET['show'] != 'all') {
-		echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$_SESSION['theme']['button_icon_all'],'collapse'=>'hide-sm-dn','link'=>'xml_cdr_extension_summary.php?show=all']);
+		echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$settings->get('theme', 'button_icon_all'),'collapse'=>'hide-sm-dn','link'=>'xml_cdr_extension_summary.php?show=all']);
 	}
-	echo button::create(['type'=>'button','label'=>$text['button-download_csv'],'icon'=>$_SESSION['theme']['button_icon_download'],'collapse'=>'hide-sm-dn','link'=>'xml_cdr_extension_summary.php?'.(!empty($_SERVER["QUERY_STRING"]) ? $_SERVER["QUERY_STRING"].'&' : null).'type=csv']);
-	echo button::create(['type'=>'button','label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'collapse'=>'hide-xs','style'=>'margin-left: 15px;','link'=>'xml_cdr_extension_summary.php']);
-	echo button::create(['type'=>'button','label'=>$text['button-update'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','collapse'=>'hide-xs','onclick'=>"document.getElementById('frm').submit();"]);
+	echo button::create(['type'=>'button','label'=>$text['button-download_csv'],'icon'=>$settings->get('theme', 'button_icon_download'),'collapse'=>'hide-sm-dn','link'=>'xml_cdr_extension_summary.php?'.(!empty($_SERVER["QUERY_STRING"]) ? $_SERVER["QUERY_STRING"].'&' : null).'type=csv']);
+	echo button::create(['type'=>'button','label'=>$text['button-reset'],'icon'=>$settings->get('theme', 'button_icon_reset'),'collapse'=>'hide-xs','style'=>'margin-left: 15px;','link'=>'xml_cdr_extension_summary.php']);
+	echo button::create(['type'=>'button','label'=>$text['button-update'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','collapse'=>'hide-xs','onclick'=>"document.getElementById('frm').submit();"]);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -154,10 +154,17 @@
 		echo "			".$text['label-include_internal']."\n";
 		echo "		</div>\n";
 		echo "		<div class='field'>\n";
-		echo "			<select class='formfld' name='include_internal' id='include_internal'>\n";
-		echo "				<option value='0'>".$text['option-false']."</option>\n";
-		echo "				<option value='1' ".((!empty($include_internal) && $include_internal == 1) ? "selected" : null).">".$text['option-true']."</option>\n";
+		if ($input_toggle_style_switch) {
+			echo "		<span class='switch'>\n";
+		}
+		echo "			<select class='formfld' id='include_internal' name='include_internal'>\n";
+		echo "				<option value='false' ".($include_internal === 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+		echo "				<option value='true' ".($include_internal === 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
 		echo "			</select>\n";
+		if ($input_toggle_style_switch) {
+			echo "			<span class='slider'></span>\n";
+			echo "		</span>\n";
+		}
 		echo "		</div>\n";
 
 		echo "	</div>\n";

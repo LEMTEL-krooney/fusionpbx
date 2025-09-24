@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2018-2024
+	Portions created by the Initial Developer are Copyright (C) 2018-2025
 	the Initial Developer. All Rights Reserved.
 */
 
@@ -62,7 +62,7 @@
 		$bridge_gateways = $_POST["bridge_gateways"];
 		$destination_number = $_POST["destination_number"];
 		$bridge_destination = $_POST["bridge_destination"];
-		$bridge_enabled = $_POST["bridge_enabled"] ?? 'false';
+		$bridge_enabled = $_POST["bridge_enabled"];
 		$bridge_description = $_POST["bridge_description"];
 	}
 
@@ -343,7 +343,7 @@
 
 //get the domains
 	$sql = "select * from v_domains ";
-	$sql .= "where domain_enabled = 'true' ";
+	$sql .= "where domain_enabled = true ";
 	$database = new database;
 	$domains = $database->select($sql, null, 'all');
 	unset($sql);
@@ -351,14 +351,11 @@
 //get the sip profiles
 	$sql = "select sip_profile_name ";
 	$sql .= "from v_sip_profiles ";
-	$sql .= "where sip_profile_enabled = 'true' ";
+	$sql .= "where sip_profile_enabled = true ";
 	$sql .= "order by sip_profile_name asc ";
 	$database = new database;
 	$sip_profiles = $database->select($sql, null, 'all');
 	unset($sql);
-
-//set the defaults
-	if (empty($bridge_enabled)) { $bridge_enabled = 'true'; }
 
 //create token
 	$object = new token;
@@ -407,11 +404,11 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-bridge']."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'bridges.php']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'bridges.php']);
 	if ($action == 'update' && permission_exists('bridge_delete')) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>'margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$settings->get('theme', 'button_icon_delete'),'name'=>'btn_delete','style'=>'margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','name'=>'action','value'=>'save']);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','name'=>'action','value'=>'save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -572,17 +569,16 @@
 	echo "	".$text['label-bridge_enabled']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
-		echo "	<label class='switch'>\n";
-		echo "		<input type='checkbox' id='bridge_enabled' name='bridge_enabled' value='true' ".(!empty($bridge_enabled) && $bridge_enabled == 'true' ? "checked='checked'" : null).">\n";
-		echo "		<span class='slider'></span>\n";
-		echo "	</label>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
 	}
-	else {
-		echo "	<select class='formfld' id='bridge_enabled' name='bridge_enabled'>\n";
-		echo "		<option value='true' ".($bridge_enabled == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-		echo "		<option value='false' ".($bridge_enabled == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-		echo "	</select>\n";
+	echo "		<select class='formfld' id='bridge_enabled' name='bridge_enabled'>\n";
+	echo "			<option value='true' ".($bridge_enabled === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "			<option value='false' ".($bridge_enabled === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "		</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
 	}
 	echo "<br />\n";
 	echo $text['description-bridge_enabled']."\n";

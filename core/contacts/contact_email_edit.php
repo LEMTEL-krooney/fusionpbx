@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -125,7 +125,7 @@ if (!empty($_GET["contact_uuid"]) && is_uuid($_GET["contact_uuid"])) {
 
 				//if primary, unmark other primary emails
 					if ($email_primary) {
-						$sql = "update v_contact_emails set email_primary = 0 ";
+						$sql = "update v_contact_emails set email_primary = false ";
 						$sql .= "where domain_uuid = :domain_uuid ";
 						$sql .= "and contact_uuid = :contact_uuid ";
 						$parameters['domain_uuid'] = $domain_uuid;
@@ -225,8 +225,8 @@ if (!empty($_GET["contact_uuid"]) && is_uuid($_GET["contact_uuid"])) {
 	}
 	echo "	</div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'contact_edit.php?id='.urlencode($contact_uuid ?? '')]);
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'contact_edit.php?id='.urlencode($contact_uuid ?? '')]);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -239,6 +239,7 @@ if (!empty($_GET["contact_uuid"]) && is_uuid($_GET["contact_uuid"])) {
 	}
 	echo "<br /><br />\n";
 
+	echo "<div class='card'>\n";
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 
 	echo "<tr>\n";
@@ -290,10 +291,17 @@ if (!empty($_GET["contact_uuid"]) && is_uuid($_GET["contact_uuid"])) {
 	echo "	".$text['label-primary']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<select class='formfld' name='email_primary' id='email_primary'>\n";
-	echo "		<option value='0'>".$text['option-false']."</option>\n";
-	echo "		<option value='1' ".(!empty($email_primary) && $email_primary ? "selected" : null).">".$text['option-true']."</option>\n";
-	echo "	</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "	<span class='switch'>\n";
+	}
+	echo "		<select class='formfld' id='email_primary' name='email_primary'>\n";
+	echo "			<option value='false' ".($email_primary === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "			<option value='true' ".($email_primary === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		</select>\n";
+	if ($input_toggle_style_switch) {
+		echo "		<span class='slider'></span>\n";
+		echo "	</span>\n";
+	}
 	echo "<br />\n";
 	echo $text['description-email_primary']."\n";
 	echo "</td>\n";
@@ -311,6 +319,7 @@ if (!empty($_GET["contact_uuid"]) && is_uuid($_GET["contact_uuid"])) {
 	echo "</tr>\n";
 
 	echo "</table>";
+	echo "</div>\n";
 	echo "<br><br>";
 
 	echo "<input type='hidden' name='contact_uuid' value='".escape($contact_uuid ?? '')."'>\n";

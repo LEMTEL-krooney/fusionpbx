@@ -51,12 +51,11 @@
 	}
 
 //menu restore default
-	//require_once "resources/classes/menu.php";
 	$menu = new menu;
 	$menu->menu_uuid = $menu_uuid;
 	$menu->menu_language = $menu_language;
-	$menu->delete_unprotected();
-	$menu->restore();
+	$menu->restore_delete();
+	$menu->restore_default();
 	unset($menu);
 
 //get the menu array and save it to the session

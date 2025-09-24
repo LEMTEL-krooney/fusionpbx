@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -43,10 +43,16 @@
 
 //add the settings object
 	$settings = new settings(["domain_uuid" => $_SESSION['domain_uuid'], "user_uuid" => $_SESSION['user_uuid']]);
-	$speech_enabled = $settings->get('speech', 'enabled', false);
+
+//as long as the class exists, enable speech using default settings
+	$speech_enabled = class_exists('speech') && $settings->get('speech', 'enabled', false);
 	$speech_engine = $settings->get('speech', 'engine', '');
-	$transcribe_enabled = $settings->get('transcribe', 'enabled', false);
+
+//as long as the class exists, enable transcribe using default settings
+	$transcribe_enabled = class_exists('transcribe') && $settings->get('transcribe', 'enabled', false);
 	$transcribe_engine = $settings->get('transcribe', 'engine', '');
+
+//set the storage type from default settings
 	$storage_type = $settings->get('voicemail', 'storage_type', '');
 
 //set defaults
@@ -283,11 +289,11 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['label-'.($action == 'update' ? 'edit' : 'add')]."</b></div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','collapse'=>'hide-xs','link'=>'voicemail_greetings.php?id='.urlencode($voicemail_id)]);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$settings->get('theme', 'button_icon_back'),'id'=>'btn_back','style'=>'margin-right: 15px;','collapse'=>'hide-xs','link'=>'voicemail_greetings.php?id='.urlencode($voicemail_id)]);
  	if (permission_exists('voicemail_greeting_delete') && $action == 'update') {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','collapse'=>'hide-xs','style'=>'margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$settings->get('theme', 'button_icon_delete'),'name'=>'btn_delete','collapse'=>'hide-xs','style'=>'margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','collapse'=>'hide-xs']);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$settings->get('theme', 'button_icon_save'),'id'=>'btn_save','collapse'=>'hide-xs']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -385,17 +391,16 @@ if (!empty($_POST) && empty($_POST["persistformvar"])) {
 			echo "	".$text['label-translate']."\n";
 			echo "</td>\n";
 			echo "<td class='vtable' align='left'>\n";
-			if (substr($_SESSION['theme']['input_toggle_style']['text'], 0, 6) == 'switch') {
-				echo "	<label class='switch'>\n";
-				echo "		<input type='checkbox' id='translate' name='translate' value='true' ".($translate == 'true' ? "checked='checked'" : null).">\n";
-				echo "		<span class='slider'></span>\n";
-				echo "	</label>\n";
+			if ($input_toggle_style_switch) {
+				echo "	<span class='switch'>\n";
 			}
-			else {
-				echo "	<select class='formfld' id='translate' name='translate'>\n";
-				echo "		<option value='true' ".($translate == 'true' ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-				echo "		<option value='false' ".($translate == 'false' ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-				echo "	</select>\n";
+			echo "	<select class='formfld' id='translate' name='translate'>\n";
+			echo "		<option value='true' ".($translate === true ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+			echo "		<option value='false' ".($translate === false ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+			echo "	</select>\n";
+			if ($input_toggle_style_switch) {
+				echo "		<span class='slider'></span>\n";
+				echo "	</span>\n";
 			}
 			echo "<br />\n";
 			echo $text['description-translate']."\n";

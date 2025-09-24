@@ -18,7 +18,7 @@
 
   The Initial Developer of the Original Code is
   Mark J Crane <markjcrane@fusionpbx.com>
-  Copyright (C) 2013 - 2023
+  Copyright (C) 2013 - 2025
   All Rights Reserved.
 
   Contributor(s):
@@ -26,8 +26,6 @@
  */
 
 //define the schema class
-if (!class_exists('schema')) {
-
 	class schema {
 
 		//define variables
@@ -219,25 +217,8 @@ if (!class_exists('schema')) {
 		}
 
 		//database table exists
-		private function db_table_exists($db_type, $db_name, $table_name) {
-			$sql = "";
-			if ($db_type == "sqlite") {
-				$sql .= "SELECT * FROM sqlite_master WHERE type='table' and name='$table_name' ";
-			}
-			if ($db_type == "pgsql") {
-				$sql .= "select * from pg_tables where schemaname='public' and tablename = '$table_name' ";
-			}
-			if ($db_type == "mysql") {
-				$sql .= "SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = '$db_name' and TABLE_NAME = '$table_name' ";
-			}
-			$prep_statement = $this->database->db->prepare(check_sql($sql));
-			$prep_statement->execute();
-			$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-			if (count($result) > 0) {
-				return true; //table exists
-			} else {
-				return false; //table doesn't exist
-			}
+		private function db_table_exists($table_name) {
+			return $this->database->table_exists($table_name);
 		}
 
 		//database table information
@@ -306,33 +287,7 @@ if (!class_exists('schema')) {
 
 		//database column exists
 		private function db_column_exists($db_type, $db_name, $table_name, $column_name) {
-
-			if ($db_type == "sqlite") {
-				$table_info = $this->db_table_info($db_name, $db_type, $table_name);
-				if ($this->db_sqlite_column_exists($table_info, $column_name)) {
-					return true;
-				} else {
-					return false;
-				}
-			}
-			if ($db_type == "pgsql") {
-				$sql = "SELECT attname FROM pg_attribute WHERE attrelid = (SELECT oid FROM pg_class WHERE relname = '$table_name' limit 1) AND attname = '$column_name'; ";
-			}
-			if ($db_type == "mysql") {
-				//$sql .= "SELECT * FROM information_schema.COLUMNS where TABLE_SCHEMA = '$db_name' and TABLE_NAME = '$table_name' and COLUMN_NAME = '$column_name' ";
-				$sql = "show columns from $table_name where field = '$column_name' ";
-			}
-			if ($sql) {
-				$prep_statement = $this->database->db->prepare(check_sql($sql));
-				$prep_statement->execute();
-				$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-				if (!empty($result)) {
-					return true;
-				} else {
-					return false;
-				}
-				unset($prep_statement);
-			}
+			return $this->database->column_exists($table_name, $column_name);
 		}
 
 		//database column data type
@@ -473,7 +428,6 @@ if (!class_exists('schema')) {
 			}
 
 			//get the db variables
-			//require_once "resources/classes/config.php";
 			//$config = new config;
 			//$config_exists = $config->exists();
 			//$config_path = $config->find();
@@ -540,7 +494,7 @@ if (!class_exists('schema')) {
 						if (!empty($table_name)) {
 
 							//check if the table exists
-							if ($this->db_table_exists($db_type, $db_name, $table_name)) {
+							if ($this->db_table_exists($table_name)) {
 								$this->apps[$x]['db'][$y]['exists'] = 'true';
 							} else {
 								$this->apps[$x]['db'][$y]['exists'] = 'false';
@@ -582,7 +536,7 @@ if (!class_exists('schema')) {
 					foreach ($app['db'] as $y => $row) {
 						if (is_array($row['table']['name'])) {
 							$table_name = $row['table']['name']['text'];
-							if ($this->db_table_exists($db_type, $db_name, $row['table']['name']['deprecated'])) {
+							if ($this->db_table_exists($row['table']['name']['deprecated'])) {
 								$row['exists'] = "false"; //testing
 								if ($db_type == "pgsql") {
 									$sql_update .= "ALTER TABLE " . $row['table']['name']['deprecated'] . " RENAME TO " . $row['table']['name']['text'] . ";\n";
@@ -594,7 +548,7 @@ if (!class_exists('schema')) {
 									$sql_update .= "ALTER TABLE " . $row['table']['name']['deprecated'] . " RENAME TO " . $row['table']['name']['text'] . ";\n";
 								}
 							} else {
-								if ($this->db_table_exists($db_type, $db_name, $row['table']['name']['text'])) {
+								if ($this->db_table_exists($row['table']['name']['text'])) {
 									$row['exists'] = "true";
 								} else {
 									$row['exists'] = "false";
@@ -602,7 +556,7 @@ if (!class_exists('schema')) {
 								}
 							}
 						} else {
-							if ($this->db_table_exists($db_type, $db_name, $row['table']['name'])) {
+							if ($this->db_table_exists($row['table']['name'])) {
 								$row['exists'] = "true";
 							} else {
 								$row['exists'] = "false";
@@ -687,18 +641,30 @@ if (!class_exists('schema')) {
 														//field type has changed
 														else {
 															switch ($field_type) {
-																case 'numeric': $using = $field_name . "::numeric";
+																case 'numeric':
+																	$sql_update .= "ALTER TABLE " . $table_name . " ALTER COLUMN " . $field_name . " TYPE " . $field_type . " USING " . $field_name . "::numeric;\n";
 																	break;
 																case 'timestamp':
-																case 'datetime': $using = $field_name . "::timestamp without time zone";
+																	$sql_update .= "ALTER TABLE " . $table_name . " ALTER COLUMN " . $field_name . " TYPE " . $field_type . " USING " . $field_name . "::timestamp with time zone;\n";
 																	break;
-																case 'timestamptz': $using = $field_name . "::timestamp with time zone";
+																case 'datetime':
+																	$sql_update .= "ALTER TABLE " . $table_name . " ALTER COLUMN " . $field_name . " TYPE " . $field_type . " USING " . $field_name . "::timestamp without time zone;\n";
 																	break;
-																case 'boolean': $using = $field_name . "::boolean";
+																case 'timestamptz':
+																	$sql_update .= "ALTER TABLE " . $table_name . " ALTER COLUMN " . $field_name . " TYPE " . $field_type . " USING " . $field_name . "::timestamp with time zone;\n";
+																	break;
+																case 'boolean':
+																	if ($db_field_type == 'numeric') {
+																		$sql_update .= "ALTER TABLE " . $table_name . " ALTER COLUMN " . $field_name . " TYPE text USING " . $field_name . "::text;\n";
+																	}
+																	if ($db_field_type == 'text') {
+																		$sql_update .= "UPDATE " . $table_name . " set " . $field_name . " = 'false' where " . $field_name . " = '';\n";
+																	}
+																	$sql_update .= "ALTER TABLE " . $table_name . " ALTER COLUMN " . $field_name . " TYPE " . $field_type . " USING " . $field_name . "::boolean;\n";
 																	break;
 																default: unset($using);
+																	$sql_update .= "ALTER TABLE " . $table_name . " ALTER COLUMN " . $field_name . " TYPE " . $field_type . "\n";
 															}
-															$sql_update .= "ALTER TABLE " . $table_name . " ALTER COLUMN " . $field_name . " TYPE " . $field_type . " " . ($using ? "USING " . $using : null) . ";\n";
 														}
 													}
 												}
@@ -866,15 +832,20 @@ if (!class_exists('schema')) {
 				}
 				//$this->db->beginTransaction();
 				$update_array = explode(";", $sql_update);
-				foreach ($update_array as $sql) {
-					if (strlen(trim($sql))) {
-						try {
-							$this->database->db->query(trim($sql));
-							if ($format == "text") {
-								$response .= "	$sql;\n";
+				if (is_array($update_array) && count($update_array)) {
+					//drop views so that alter table statements complete
+					$result = $this->database->views('drop');
+
+					foreach ($update_array as $sql) {
+						if (strlen(trim($sql))) {
+							try {
+								$this->database->db->query(trim($sql));
+								if ($format == "text") {
+									$response .= "	$sql;\n";
+								}
+							} catch (PDOException $error) {
+								$response .= "	error: " . $error->getMessage() . "	sql: $sql\n";
 							}
-						} catch (PDOException $error) {
-							$response .= "	error: " . $error->getMessage() . "	sql: $sql\n";
 						}
 					}
 				}
@@ -898,23 +869,18 @@ if (!class_exists('schema')) {
 				}
 			}
 
+			//create views so that alter table statements complete
+			$this->database->views('create');
+
 			//handle response
-			//if ($output == "echo") {
-			//	echo $response;
-			//}
-			//else if ($output == "return") {
 			return $response;
-			//}
+
 		} //end function
 	}
 
-}
-
 //example use
-//require_once "resources/classes/schema.php";
 //$obj = new schema;
 //$obj->db_type = $db_type;
 //$obj->schema();
 //$result_array = $schema->obj['sql'];
 //print_r($result_array);
-?>

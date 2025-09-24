@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2024
+	Portions created by the Initial Developer are Copyright (C) 2008-2025
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -40,12 +40,18 @@
 	if (!isset($_SESSION["menu"])) { $_SESSION["menu"] = null; }
 	if (!isset($_SESSION["username"])) { $_SESSION["username"] = null; }
 
+//save the session domains array to a variable of type array
+	$domains = $_SESSION['domains'] ?? [];
+
+//count the number of domains
+	$domain_count = count($domains);
+
 //get the output from the buffer
 	$body = ($content_from_db ?? '').ob_get_contents();
 	ob_end_clean(); //clean the buffer
 
 //clear the template
-	//if (isset($_SESSION['theme']['cache']['boolean']) && $_SESSION['theme']['cache']['boolean'] == "false") {
+	//if (!$settings->get('theme', 'cache', false)) {
 	//	$_SESSION["template_content"] = '';
 	//}
 
@@ -95,6 +101,8 @@
 
 //set template variables
 
+	//add self
+		$view->assign('php_self', basename($_SERVER['PHP_SELF']));
 	//add translations
 		foreach($text as $key => $value) {
 			$array[str_replace('-', '_', $key)] = $value;
@@ -175,7 +183,7 @@
 		$document_title = (!empty($document['title']) ? $document['title'].' - ' : null).($document_title ?? '');
 		$view->assign('document_title', $document_title);
 	//domain selector control
-		$domain_selector_enabled = permission_exists('domain_select') && count($_SESSION['domains']) > 1 ? true : false;
+		$domain_selector_enabled = permission_exists('domain_select') && $domain_count > 1 ? true : false;
 		$view->assign('domain_selector_enabled', $domain_selector_enabled);
 	//browser name
 		$user_agent = http_user_agent();
@@ -188,15 +196,15 @@
 	//domains application path
 		$view->assign('domains_app_path', PROJECT_PATH.(file_exists($_SERVER['DOCUMENT_ROOT'].'/app/domains/domains.php') ? '/app/domains/domains.php' : '/core/domains/domains.php'));
 	//domain count
-		$view->assign('domain_count', is_array($_SESSION['domains']) ? sizeof($_SESSION['domains']) : 0);
+		$view->assign('domain_count', $domain_count);
 	//domain selector row background colors
 		$view->assign('domain_selector_background_color_1', !empty($_SESSION['theme']['domain_inactive_background_color'][0]) != '' ? $_SESSION['theme']['domain_inactive_background_color'][0] : '#eaedf2');
 		$view->assign('domain_selector_background_color_2', !empty($_SESSION['theme']['domain_inactive_background_color'][1]) != '' ? $_SESSION['theme']['domain_inactive_background_color'][1] : '#ffffff');
 		$view->assign('domain_active_background_color', !empty($_SESSION['theme']['domain_active_background_color']['text']) ? $_SESSION['theme']['domain_active_background_color']['text'] : '#eeffee');
 	//domain list
-		$view->assign('domains', $_SESSION['domains']);
+		$view->assign('domains', $domains);
 	//domain uuid
-		$view->assign('domain_uuid', $_SESSION['domain_uuid']);
+		$view->assign('domain_uuid', $domain_uuid);
 	//menu container
 		//load menu array into the session
 			if (!isset($_SESSION['menu']['array'])) {
@@ -206,7 +214,7 @@
 				unset($menu);
 			}
 		//build menu by style
-			switch ($_SESSION['theme']['menu_style']['text']) {
+			switch ($settings->get('theme', 'menu_style')) {
 				case 'side':
 					$view->assign('menu_side_state', (isset($_SESSION['theme']['menu_side_state']['text']) && $_SESSION['theme']['menu_side_state']['text'] != '' ? $_SESSION['theme']['menu_side_state']['text'] : 'expanded'));
 					if ($_SESSION['theme']['menu_side_state']['text'] != 'hidden') {
@@ -250,6 +258,7 @@
 		$view->assign('container_close', '</div>');
 		$view->assign('document_body', $body);
 		$view->assign('current_year', date('Y'));
+
 	//login logo
 		//determine logo source
 			if (isset($_SESSION['theme']['logo_login']['text']) && $_SESSION['theme']['logo_login']['text'] != '') {
@@ -277,15 +286,20 @@
 		$view->assign('login_logo_source', $login_logo_source);
 		$view->assign('login_logo_width', $login_logo_width);
 		$view->assign('login_logo_height', $login_logo_height);
-//login page
-	//$view->assign('login_page', $login_page);
+
+	//login page
+		//$view->assign('login_page', $login_page);
+
 	//messages
 		$view->assign('messages', message::html(true, '		'));
+
+	//set the input toggle style options: select, switch_round, switch_square
+		$view->assign('input_toggle_style_switch', $input_toggle_style_switch);
+
 	//session timer
-		if (
-			$authenticated &&
+		if ($authenticated &&
 			file_exists($_SERVER['DOCUMENT_ROOT'].PROJECT_PATH.'/app/session_timer/session_timer.php') &&
-			$_SESSION['security']['session_timer_enabled']['boolean'] == 'true'
+			$settings->get('security', 'session_timer_enabled', false)
 			) {
 			include_once PROJECT_PATH.'app/session_timer/session_timer.php';
 			$view->assign('session_timer', $session_timer);

@@ -32,7 +32,7 @@
 		if ($num_rows == 0) {
 
 			//set the directory
-				$xml_dir = $setting->get('switch','conf').'/autoload_configs';
+				$xml_dir = $settings->get('switch','conf').'/autoload_configs';
 				$xml_file = $xml_dir."/conference.conf";
 				$xml_file_alt = $_SERVER["DOCUMENT_ROOT"].'/'.PROJECT_PATH.'/app/switch/resources/conf/autoload_configs/conference.conf';
 
@@ -83,7 +83,7 @@
 								$control_action = $p['@attributes']['action'];
 								$control_digits = $p['@attributes']['digits'];
 								$control_data = $p['@attributes']['data'];
-								$control_enabled = 'true';
+								$control_enabled = true;
 
 							//add the coference profile params
 								$conference_control_detail_uuid = uuid();
